@@ -1,0 +1,135 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="page1" name="UC03 Activity Diagram">
+    <mxGraphModel dx="1697" dy="1141" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="swimlane;horizontal=1;startSize=30;html=1;direction=east;" value="Supervisor / Team Lead" vertex="1">
+          <mxGeometry height="770" width="430" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="2" style="ellipse;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="190" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="20" parent="2" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Open Attendance &amp; Scheduling" vertex="1">
+          <mxGeometry height="55" width="250" x="80" y="81" as="geometry" />
+        </mxCell>
+        <mxCell id="200" edge="1" parent="2" source="10" style="endArrow=block;html=1;rounded=0;" target="20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="2" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Select Team / Employees" vertex="1">
+          <mxGeometry height="55" width="250" x="80" y="161" as="geometry" />
+        </mxCell>
+        <mxCell id="201" edge="1" parent="2" source="20" style="endArrow=block;html=1;rounded=0;" target="21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="22" parent="2" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Create New Schedule or Edit Existing Schedule" vertex="1">
+          <mxGeometry height="60" width="290" x="60" y="261" as="geometry" />
+        </mxCell>
+        <mxCell id="23" parent="2" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Enter Schedule Details and Assign Employees" vertex="1">
+          <mxGeometry height="65" width="290" x="60" y="368" as="geometry" />
+        </mxCell>
+        <mxCell id="204" edge="1" parent="2" source="22" style="endArrow=block;html=1;rounded=0;" target="23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="24" parent="2" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Correct Invalid Information" vertex="1">
+          <mxGeometry height="55" width="300" x="50" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="25" parent="2" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Modify Conflicting Assignment" vertex="1">
+          <mxGeometry height="55" width="300" x="55" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="swimlane;horizontal=1;startSize=30;html=1;fontStyle=1;direction=east;" value="System" vertex="1">
+          <mxGeometry height="770" width="690" x="470" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="31" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Validate Schedule Information" vertex="1">
+          <mxGeometry height="55" width="260" x="170" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="30" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Display Current Schedule" vertex="1">
+          <mxGeometry height="55" width="260" x="160" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="37" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Employees Can View Updated Schedule" vertex="1">
+          <mxGeometry height="55" width="230" x="450" y="397.5" as="geometry" />
+        </mxCell>
+        <mxCell id="36" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Publish Latest Schedule" vertex="1">
+          <mxGeometry height="55" width="210" x="460" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="217" edge="1" parent="3" source="36" style="endArrow=block;html=1;rounded=0;" target="37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="35" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Save / Update Schedule" vertex="1">
+          <mxGeometry height="55" width="210" x="460" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="216" edge="1" parent="3" source="35" style="endArrow=block;html=1;rounded=0;" target="36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="32" parent="3" style="rhombus;whiteSpace=wrap;html=1;fontSize=13;" value="Valid?" vertex="1">
+          <mxGeometry height="80" width="80" x="260" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="206" edge="1" parent="3" source="31" style="endArrow=block;html=1;rounded=0;" target="32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="38" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Show Validation Error" vertex="1">
+          <mxGeometry height="55" width="190" x="40" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="207" edge="1" parent="3" source="32" style="endArrow=block;html=1;rounded=0;" target="38" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="33" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Check Scheduling Conflicts" vertex="1">
+          <mxGeometry height="55" width="260" x="190" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="210" edge="1" parent="3" source="32" style="endArrow=block;html=1;rounded=0;" target="33" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="34" parent="3" style="rhombus;whiteSpace=wrap;html=1;fontSize=13;" value="Conflict?" vertex="1">
+          <mxGeometry height="80" width="80" x="305" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="211" edge="1" parent="3" source="33" style="endArrow=block;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.528;exitY=1.008;exitDx=0;exitDy=0;exitPerimeter=0;" target="34">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="345" y="570" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="215" edge="1" parent="3" source="34" style="endArrow=block;html=1;rounded=0;" target="35" value="No">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7Mo8EDsm-FCS3o8uJstZ-220" connectable="0" parent="3" style="group" value="" vertex="1">
+          <mxGeometry height="44" width="44" x="543" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="7Mo8EDsm-FCS3o8uJstZ-220" style="ellipse;html=1;aspect=fixed;fillColor=none;strokeWidth=3;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="" vertex="1">
+          <mxGeometry height="44" width="44" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="7Mo8EDsm-FCS3o8uJstZ-220" style="ellipse;html=1;aspect=fixed;fillColor=#000000;strokeColor=#000000;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="7" y="7" as="geometry" />
+        </mxCell>
+        <mxCell id="218" edge="1" parent="3" source="37" style="endArrow=block;html=1;rounded=0;" target="12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="39" parent="3" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;" value="Show Conflict Details" vertex="1">
+          <mxGeometry height="55" width="190" x="50" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="212" edge="1" parent="3" source="34" style="endArrow=block;html=1;rounded=0;" target="39" value="Yes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="202" edge="1" parent="1" source="21" style="endArrow=block;html=1;rounded=0;" target="30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="203" edge="1" parent="1" source="30" style="endArrow=block;html=1;rounded=0;" target="22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="205" edge="1" parent="1" source="23" style="endArrow=block;html=1;rounded=0;" target="31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="208" edge="1" parent="1" source="38" style="endArrow=block;html=1;rounded=0;" target="24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="209" edge="1" parent="1" source="24" style="endArrow=block;html=1;rounded=0;" target="31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="213" edge="1" parent="1" source="39" style="endArrow=block;html=1;rounded=0;" target="25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="214" edge="1" parent="1" source="25" style="endArrow=block;html=1;rounded=0;" target="31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
