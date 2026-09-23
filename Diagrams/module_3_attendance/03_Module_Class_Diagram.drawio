@@ -1,0 +1,112 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="moduleClass" name="Module Class Diagram">
+    <mxGraphModel dx="1485" dy="1826" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" value="Member 3 – Attendance &amp; Scheduling Management: Module Class Diagram" vertex="1">
+          <mxGeometry height="40" width="800" x="160" y="-270" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=12;spacing=8;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Employee&lt;/b&gt;&lt;br&gt;&lt;i&gt;&amp;lt;&amp;lt;shared reference&amp;gt;&amp;gt;&lt;/i&gt;&lt;/div&gt;&lt;hr&gt;- employeeId: Long&lt;br&gt;- fullName: String&lt;br&gt;- status: EmployeeStatus&lt;br&gt;- supervisorId: Long&lt;br&gt;" vertex="1">
+          <mxGeometry height="165" width="250" x="10" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=12;spacing=8;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Team / Project&lt;/b&gt;&lt;br&gt;&lt;i&gt;&amp;lt;&amp;lt;shared reference&amp;gt;&amp;gt;&lt;/i&gt;&lt;/div&gt;&lt;hr&gt;- teamId: Long&lt;br&gt;- name: String&lt;br&gt;" vertex="1">
+          <mxGeometry height="115" width="250" x="407.5" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=12;spacing=8;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;LeaveRequest&lt;/b&gt;&lt;br&gt;&lt;i&gt;&amp;lt;&amp;lt;shared reference&amp;gt;&amp;gt;&lt;/i&gt;&lt;/div&gt;&lt;hr&gt;- leaveRequestId: Long&lt;br&gt;- startDate: Date&lt;br&gt;- endDate: Date&lt;br&gt;- status: LeaveStatus&lt;br&gt;" vertex="1">
+          <mxGeometry height="145" width="250" x="407.5" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=12;spacing=8;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Schedule&lt;/b&gt;&lt;br&gt;&lt;i&gt;&amp;lt;&amp;lt;module class&amp;gt;&amp;gt;&lt;/i&gt;&lt;/div&gt;&lt;hr&gt;- scheduleId: Long&lt;br&gt;- periodStart: Date&lt;br&gt;- periodEnd: Date&lt;br&gt;- status: ScheduleStatus&lt;br&gt;- createdAt: DateTime&lt;br&gt;- updatedAt: DateTime&lt;br&gt;&lt;hr&gt;+ publish(): void&lt;br&gt;+ update(): void&lt;br&gt;+ checkConflicts(): boolean&lt;br&gt;" vertex="1">
+          <mxGeometry height="250" width="285" x="790" y="127.5" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=12;spacing=8;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;ScheduleEntry&lt;/b&gt;&lt;br&gt;&lt;i&gt;&amp;lt;&amp;lt;module class&amp;gt;&amp;gt;&lt;/i&gt;&lt;/div&gt;&lt;hr&gt;- scheduleEntryId: Long&lt;br&gt;- workDate: Date&lt;br&gt;- startTime: Time&lt;br&gt;- endTime: Time&lt;br&gt;- notes: String&lt;br&gt;&lt;hr&gt;+ overlaps(other: ScheduleEntry): boolean&lt;br&gt;" vertex="1">
+          <mxGeometry height="215" width="285" x="390" y="-200" as="geometry" />
+        </mxCell>
+        <mxCell id="22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=12;spacing=8;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;AttendanceRecord&lt;/b&gt;&lt;br&gt;&lt;i&gt;&amp;lt;&amp;lt;module class&amp;gt;&amp;gt;&lt;/i&gt;&lt;/div&gt;&lt;hr&gt;- attendanceId: Long&lt;br&gt;- attendanceDate: Date&lt;br&gt;- checkInTime: Time&lt;br&gt;- checkOutTime: Time&lt;br&gt;- attendanceStatus: AttendanceStatus&lt;br&gt;- workingHours: Decimal&lt;br&gt;- notes: String&lt;br&gt;&lt;hr&gt;+ calculateWorkingHours(): Decimal&lt;br&gt;+ updateCorrection(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="222.5" width="300" y="-203.75" as="geometry" />
+        </mxCell>
+        <mxCell id="100" edge="1" parent="1" source="11" style="endArrow=none;html=1;rounded=0;" target="10" value="contains">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="100s" connectable="0" parent="100" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="100t" connectable="0" parent="100" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="101" edge="1" parent="1" source="11" style="endArrow=none;html=1;rounded=0;" target="20" value="has schedules">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="101s" connectable="0" parent="101" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="101t" connectable="0" parent="101" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="102" edge="1" parent="1" source="20" style="startArrow=diamond;startFill=1;endArrow=none;html=1;rounded=0;" target="21" value="contains">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="102s" connectable="0" parent="102" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="102t" connectable="0" parent="102" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1..*" vertex="1">
+          <mxGeometry relative="1" x="0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="103" edge="1" parent="1" source="10" style="endArrow=none;html=1;rounded=0;" target="21" value="assigned to">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="103s" connectable="0" parent="103" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="103t" connectable="0" parent="103" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="104" edge="1" parent="1" source="10" style="endArrow=none;html=1;rounded=0;" target="22" value="has">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="104s" connectable="0" parent="104" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="104t" connectable="0" parent="104" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="105" edge="1" parent="1" source="10" style="endArrow=none;html=1;rounded=0;" target="12" value="requests">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="105s" connectable="0" parent="105" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="105t" connectable="0" parent="105" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.8" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="106" edge="1" parent="1" source="20" style="dashed=1;endArrow=open;endFill=0;html=1;rounded=0;" target="12" value="checks approved leave">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
