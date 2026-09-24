@@ -1,0 +1,152 @@
+<mxfile host="Electron" agent="Mozilla/5.0">
+  <diagram id="R2lEEwgKxIzJXQR5ZV9n" name="Employee &amp; Organization Management">
+    <mxGraphModel dx="1288" dy="783" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;" value="Member 1 – Employee &amp; Organization Management: Module Class Diagram" vertex="1">
+          <mxGeometry height="40" width="1300" x="50" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="employeeBox" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=2;strokeColor=#000000;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="520" width="320" x="40" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="employeeHeader" parent="employeeBox" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;" value="Employee&#xa;&lt;&lt;module class&gt;&gt;" vertex="1">
+          <mxGeometry height="50" width="320" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="employeeSep1" parent="employeeBox" style="line;strokeWidth=2;html=1;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="1" width="320" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="employeeAttr" parent="employeeBox" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontFamily=monospace;" value="- employeeId: Long&#xa;- firstName: String&#xa;- lastName: String&#xa;- email: String&#xa;- phone: String&#xa;- personalEmail: String&#xa;- personalPhone: String&#xa;- hireDate: Date&#xa;- jobTitle: String&#xa;- status: EmployeeStatus&#xa;- supervisorId: Long" vertex="1">
+          <mxGeometry height="215" width="320" y="101" as="geometry" />
+        </mxCell>
+        <mxCell id="employeeSep2" parent="employeeBox" style="line;strokeWidth=2;html=1;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="1" width="320" y="316" as="geometry" />
+        </mxCell>
+        <mxCell id="employeeOps" parent="employeeBox" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontFamily=monospace;" value="+ getProfile(): Profile&#xa;+ updatePersonalContactInfo(email, phone): void&#xa;+ updateOfficialInfo(jobTitle, department, role): void&#xa;+ deactivateAccount(): void&#xa;+ getDirectReports(): List&lt;Employee&gt;&#xa;+ getTeam(): List&lt;Employee&gt;" vertex="1">
+          <mxGeometry height="203" width="320" y="317" as="geometry" />
+        </mxCell>
+        <mxCell id="departmentBox" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=2;strokeColor=#000000;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="300" width="320" x="500" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="departmentHeader" parent="departmentBox" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;" value="Department&#xa;&lt;&lt;module class&gt;&gt;" vertex="1">
+          <mxGeometry height="50" width="320" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="departmentSep1" parent="departmentBox" style="line;strokeWidth=2;html=1;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="1" width="320" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="departmentAttr" parent="departmentBox" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontFamily=monospace;" value="- departmentId: Long&#xa;- name: String&#xa;- description: String" vertex="1">
+          <mxGeometry height="60" width="320" y="101" as="geometry" />
+        </mxCell>
+        <mxCell id="rel3Label" parent="departmentBox" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="hasStatus" vertex="1">
+          <mxGeometry height="20" width="320" y="161" as="geometry" />
+        </mxCell>
+        <mxCell id="departmentSep2" parent="departmentBox" style="line;strokeWidth=2;html=1;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="1" width="320" y="181" as="geometry" />
+        </mxCell>
+        <mxCell id="departmentOps" parent="departmentBox" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontFamily=monospace;" value="+ getEmployees(): List&lt;Employee&gt;&#xa;+ addEmployee(emp): void&#xa;+ removeEmployee(emp): void&#xa;+ getManager(): Employee" vertex="1">
+          <mxGeometry height="118" width="320" y="182" as="geometry" />
+        </mxCell>
+        <mxCell id="roleBox" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=1;strokeWidth=2;strokeColor=#000000;dashed=1;dashPattern=5;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="220" width="320" x="500" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="roleHeader" parent="roleBox" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;" value="Role&#xa;&lt;&lt;shared reference&gt;&gt;" vertex="1">
+          <mxGeometry height="50" width="320" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="roleSep1" parent="roleBox" style="line;strokeWidth=2;html=1;strokeColor=#000000;dashed=1;dashPattern=5;" value="" vertex="1">
+          <mxGeometry height="1" width="320" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="roleAttr" parent="roleBox" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontFamily=monospace;" value="- roleId: Long&#xa;- name: String&#xa;- description: String" vertex="1">
+          <mxGeometry height="60" width="320" y="101" as="geometry" />
+        </mxCell>
+        <mxCell id="roleSep2" parent="roleBox" style="line;strokeWidth=2;html=1;strokeColor=#000000;dashed=1;dashPattern=5;" value="" vertex="1">
+          <mxGeometry height="1" width="320" y="161" as="geometry" />
+        </mxCell>
+        <mxCell id="roleOps" parent="roleBox" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontFamily=monospace;" value="+ getPermissions(): Set&lt;String&gt;&#xa;+ hasPermission(perm): boolean" vertex="1">
+          <mxGeometry height="58" width="320" y="162" as="geometry" />
+        </mxCell>
+        <mxCell id="statusBox" parent="1" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;rounded=0;shadow=0;strokeWidth=2;strokeColor=#000000;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="220" width="280" x="960" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="statusHeader" parent="statusBox" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;" value="EmployeeStatus&#xa;&lt;&lt;enumeration&gt;&gt;" vertex="1">
+          <mxGeometry height="50" width="280" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="statusSep" parent="statusBox" style="line;strokeWidth=2;html=1;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="1" width="280" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="statusValues" parent="statusBox" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontFamily=monospace;" value="ACTIVE&#xa;INACTIVE&#xa;SUSPENDED&#xa;ON_LEAVE" vertex="1">
+          <mxGeometry height="119" width="280" y="101" as="geometry" />
+        </mxCell>
+        <mxCell id="rel1" edge="1" parent="1" source="employeeBox" style="endArrow=open;html=1;rounded=0;startArrow=none;endArrow=block;exitX=1;exitY=0.3;entryX=0;entryY=0.3;strokeWidth=2;strokeColor=#000000;" target="departmentBox" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="360" y="180" as="sourcePoint" />
+            <mxPoint x="500" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel1Label" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="belongsTo" vertex="1">
+          <mxGeometry height="20" width="80" x="410" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="rel1Mult1" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="1..*" vertex="1">
+          <mxGeometry height="20" width="35" x="350" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rel1Mult2" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="1" vertex="1">
+          <mxGeometry height="20" width="20" x="490" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="rel2" edge="1" parent="1" source="employeeBox" style="endArrow=open;html=1;rounded=0;startArrow=none;endArrow=block;exitX=1;exitY=0.7;entryX=0;entryY=0.3;strokeWidth=2;strokeColor=#000000;" target="roleBox" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="420" />
+              <mxPoint x="430" y="480" />
+            </Array>
+            <mxPoint x="360" y="420" as="sourcePoint" />
+            <mxPoint x="500" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel2Label" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="hasRole" vertex="1">
+          <mxGeometry height="20" width="60" x="410" y="425" as="geometry" />
+        </mxCell>
+        <mxCell id="rel2Mult1" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="1..*" vertex="1">
+          <mxGeometry height="20" width="35" x="350" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="rel2Mult2" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="1" vertex="1">
+          <mxGeometry height="20" width="20" x="490" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="rel3" edge="1" parent="1" style="endArrow=open;html=1;rounded=0;startArrow=none;endArrow=block;exitX=1;exitY=0.4;entryX=0;entryY=0.4;strokeWidth=2;strokeColor=#000000;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="372" />
+              <mxPoint x="680" y="272" />
+            </Array>
+            <mxPoint x="360" y="380" as="sourcePoint" />
+            <mxPoint x="960" y="259.9999999999999" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel3Mult1" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="1..*" vertex="1">
+          <mxGeometry height="20" width="35" x="350" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="rel3Mult2" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="1" vertex="1">
+          <mxGeometry height="20" width="20" x="950" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="rel4" edge="1" parent="1" source="employeeBox" style="curved=1;endArrow=open;html=1;rounded=0;startArrow=none;endArrow=block;exitX=0.1;exitY=0.05;entryX=0.1;entryY=0.05;strokeWidth=2;strokeColor=#000000;" target="employeeBox" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="50" y="30" />
+              <mxPoint x="150" y="30" />
+            </Array>
+            <mxPoint x="80" y="70" as="sourcePoint" />
+            <mxPoint x="80" y="70" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel4Label" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="supervises" vertex="1">
+          <mxGeometry height="20" width="70" x="80" y="15" as="geometry" />
+        </mxCell>
+        <mxCell id="rel4Mult1" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="0..1" vertex="1">
+          <mxGeometry height="20" width="35" x="30" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="rel4Mult2" parent="1" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=1;" value="0..*" vertex="1">
+          <mxGeometry height="20" width="35" x="160" y="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

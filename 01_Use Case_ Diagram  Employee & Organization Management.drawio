@@ -1,0 +1,58 @@
+<mxfile host="Electron" agent="ChatGPT">
+  <diagram id="evoq-module1" name="Employee &amp; Organization Management">
+    <mxGraphModel dx="1471" dy="894" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=2;fillColor=none;strokeColor=#1f2937;fontStyle=1;fontSize=18;verticalAlign=top;spacingTop=12;" value="Use Case Diagram :&amp;nbsp;Employee &amp;amp; Organization Management&amp;nbsp;" vertex="1">
+          <mxGeometry height="720" width="900" x="340" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="employee" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=14;" value="Employee" vertex="1">
+          <mxGeometry height="120" width="80" x="170" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="supervisor" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=14;" value="Supervisor / Team Lead" vertex="1">
+          <mxGeometry height="120" width="80" x="170" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="manager" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;fontSize=14;" value="Manager / Admin" vertex="1">
+          <mxGeometry height="120" width="80" x="1290" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_create" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;strokeWidth=1.5;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Create Employee Record" vertex="1">
+          <mxGeometry height="70" width="250" x="360" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_update_official" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;strokeWidth=1.5;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Update Official Employee&#xa;Information" vertex="1">
+          <mxGeometry height="70" width="250" x="700" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_deactivate" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;strokeWidth=1.5;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Deactivate Employee Account" vertex="1">
+          <mxGeometry height="70" width="250" x="980" y="263" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_view_profile" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;strokeWidth=1.5;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="View Own Profile" vertex="1">
+          <mxGeometry height="70" width="250" x="510" y="333" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_update_contact" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;strokeWidth=1.5;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Update Personal Contact&#xa;Information" vertex="1">
+          <mxGeometry height="70" width="250" x="845" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="uc_view_team" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=15;strokeWidth=1.5;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="View Team Employees" vertex="1">
+          <mxGeometry height="70" width="250" x="595" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="employee" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;" target="uc_view_profile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="employee" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;fillColor=#008a00;strokeColor=#005700;" target="uc_update_contact">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="supervisor" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;fillColor=#008a00;strokeColor=#005700;" target="uc_view_team">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="manager" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;fillColor=#008a00;strokeColor=#005700;" target="uc_create">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="manager" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;fillColor=#008a00;strokeColor=#005700;" target="uc_update_official">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="manager" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=none;startArrow=none;fillColor=#008a00;strokeColor=#005700;" target="uc_deactivate">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
