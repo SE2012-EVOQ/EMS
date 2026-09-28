@@ -246,6 +246,10 @@ The backend reads local database configuration from environment variables.
 override the default local MySQL URL, and `SERVER_PORT` can override the
 default port `8080`.
 
+The backend allows browser API requests from `http://localhost:5173` by
+default. Set `FRONTEND_ORIGIN` to the frontend's exact origin when it runs
+elsewhere.
+
 Example macOS/Linux:
 
 ```bash
