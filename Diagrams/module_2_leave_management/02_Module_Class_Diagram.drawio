@@ -1,0 +1,79 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="moduleClass" name="Module Class Diagram">
+    <mxGraphModel dx="1212" dy="1488" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" value="Leave Management: Module Class Diagram" vertex="1">
+          <mxGeometry height="40" width="800" x="203" y="-770" as="geometry" />
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-106" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;LeaveBalance&lt;/div&gt;&lt;div&gt;&amp;lt;&amp;lt;module class&amp;gt;&amp;gt;&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;&lt;div&gt;- balanceId: Long&lt;/div&gt;&lt;div&gt;- availableDays: Decimal&lt;/div&gt;&lt;div&gt;- usedDays: Decimal&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;&lt;div&gt;+ calculateBalance(): Decimal&lt;/div&gt;&lt;div&gt;+ updateBalance(): void&lt;/div&gt;" vertex="1">
+          <mxGeometry height="190" width="193" x="120.5" y="-310" as="geometry" />
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-107" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;LeaveRequest&lt;/div&gt;&lt;div&gt;&amp;lt;&amp;lt;module class&amp;gt;&amp;gt;&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;&lt;div&gt;- leaveRequestId: Long&lt;/div&gt;&lt;div&gt;- startDate: Date&lt;/div&gt;&lt;div&gt;- endDate: Date&lt;/div&gt;&lt;div&gt;- reason: String&lt;/div&gt;&lt;div&gt;- status: LeaveStatus&lt;/div&gt;&lt;div&gt;- submittedDate: DateTime&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;&lt;div&gt;+ submit(): void&lt;/div&gt;&lt;div&gt;+ approve(): void&lt;/div&gt;&lt;div&gt;+ reject(): void&lt;/div&gt;" vertex="1">
+          <mxGeometry height="222.5" width="213.5" x="525.5" y="-670" as="geometry" />
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-114" edge="1" parent="1" source="4_ibpj0QAc1Y3cwDP-9h-108" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="4_ibpj0QAc1Y3cwDP-9h-107">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-115" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-114" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Type" vertex="1">
+          <mxGeometry relative="1" x="-0.0451" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-116" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-114" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.7125" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-117" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-114" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;pre dir=&quot;ltr&quot;&gt;&lt;code&gt;0..*&lt;/code&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.6907" as="geometry">
+            <mxPoint x="4" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-108" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;LeaveType&lt;/div&gt;&lt;div&gt;&amp;lt;&amp;lt;module class&amp;gt;&amp;gt;&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;&lt;div&gt;- leaveTypeId: Long&lt;/div&gt;&lt;div&gt;- name: String&lt;/div&gt;&lt;div&gt;- description: String&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;&lt;div&gt;+ update(): void&lt;/div&gt;" vertex="1">
+          <mxGeometry height="165" width="170" x="915.5" y="-641.25" as="geometry" />
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-110" edge="1" parent="1" source="4_ibpj0QAc1Y3cwDP-9h-109" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="4_ibpj0QAc1Y3cwDP-9h-107">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-111" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-110" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Requests" vertex="1">
+          <mxGeometry relative="1" x="-0.0253" y="2" as="geometry">
+            <mxPoint x="-9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-112" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-110" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.7187" y="-3" as="geometry">
+            <mxPoint x="-22" y="-4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-113" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-110" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;pre dir=&quot;ltr&quot;&gt;&lt;code&gt;0..*&lt;/code&gt;&lt;/pre&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.7704" y="-1" as="geometry">
+            <mxPoint x="-7" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-118" edge="1" parent="1" source="4_ibpj0QAc1Y3cwDP-9h-109" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="4_ibpj0QAc1Y3cwDP-9h-106">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-119" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-118" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Has" vertex="1">
+          <mxGeometry relative="1" x="-0.0451" y="1" as="geometry">
+            <mxPoint y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-120" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-118" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8306" y="-1" as="geometry">
+            <mxPoint y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-121" connectable="0" parent="4_ibpj0QAc1Y3cwDP-9h-118" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.7674" y="1" as="geometry">
+            <mxPoint x="-2" y="-8" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4_ibpj0QAc1Y3cwDP-9h-109" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;Employee&lt;/div&gt;&lt;div&gt;&amp;lt;&amp;lt;shared reference&amp;gt;&amp;gt;&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;&lt;div&gt;- employeeId: Long&lt;/div&gt;&lt;div&gt;- fullName: String&lt;/div&gt;&lt;div&gt;- status: EmployeeStatus&lt;/div&gt;&lt;div&gt;- supervisorId: Long&lt;/div&gt;&lt;div&gt;------------------------------&lt;/div&gt;" vertex="1">
+          <mxGeometry height="165" width="183" x="125.5" y="-641.25" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
