@@ -1,0 +1,21 @@
+<mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="600" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+    <mxCell id="asset" value="&lt;b&gt;Asset&lt;/b&gt;&lt;hr&gt;- assetId : Long&lt;br&gt;- assetName : String&lt;br&gt;- assetType : String&lt;br&gt;- serialNumber : String&lt;br&gt;- status : String&lt;hr&gt;+ registerAsset()&lt;br&gt;+ updateStatus()&lt;br&gt;+ getAssetDetails()" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="100" y="80" width="240" height="180" as="geometry" />
+    </mxCell>
+    <mxCell id="assignment" value="&lt;b&gt;AssetAssignment&lt;/b&gt;&lt;hr&gt;- assignmentId : Long&lt;br&gt;- assetId : Long&lt;br&gt;- employeeId : Long&lt;br&gt;- assignedDate : Date&lt;br&gt;- returnedDate : Date&lt;br&gt;- assignmentStatus : String&lt;hr&gt;+ assignAsset()&lt;br&gt;+ returnAsset()&lt;br&gt;+ getAssignmentHistory()" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;fontSize=12;" vertex="1" parent="1">
+      <mxGeometry x="480" y="70" width="260" height="200" as="geometry" />
+    </mxCell>
+    <mxCell id="rel1" value="" style="endArrow=none;html=1;" edge="1" parent="1" source="asset" target="assignment">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="lbl1" value="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="345" y="150" width="20" height="20" as="geometry" />
+    </mxCell>
+    <mxCell id="lbl2" value="*" style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="450" y="150" width="20" height="20" as="geometry" />
+    </mxCell>
+  </root>
+</mxGraphModel>

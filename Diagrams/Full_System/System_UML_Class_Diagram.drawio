@@ -1,0 +1,274 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="classPage" name="Overall Class Diagram">
+    <mxGraphModel dx="2160" dy="1453" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1120" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=21;fontStyle=1;" value="EVOQ Employee Management System – Overall UML Class Diagram" vertex="1">
+          <mxGeometry height="40" width="1100" x="315" y="15" as="geometry" />
+        </mxCell>
+        <mxCell id="g_core" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=15;dashed=1;fillColor=none;spacingTop=6;" value="Core Employee &amp; Organization" vertex="1">
+          <mxGeometry height="470" width="1005" x="35" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="g_asset" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=15;dashed=1;fillColor=none;spacingTop=6;" value="Asset &amp; Equipment Management" vertex="1">
+          <mxGeometry height="470" width="550" x="1060" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="g_leave" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=15;dashed=1;fillColor=none;spacingTop=6;" value="Leave Management" vertex="1">
+          <mxGeometry height="520" width="865" x="35" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="g_sched" parent="1" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=15;dashed=1;fillColor=none;spacingTop=6;" value="Attendance &amp; Scheduling Management" vertex="1">
+          <mxGeometry height="520" width="745" x="905" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="c_role" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Role&lt;/b&gt;&lt;br&gt;&lt;i&gt;&amp;lt;&amp;lt;security&amp;gt;&amp;gt;&lt;/i&gt;&lt;/div&gt;&lt;hr&gt;- roleId: Long&lt;br&gt;- name: RoleName&lt;br&gt;- description: String&lt;br&gt;&lt;hr&gt;+ canAccess(feature): boolean&lt;br&gt;" vertex="1">
+          <mxGeometry height="125" width="175" x="50" y="247.5" as="geometry" />
+        </mxCell>
+        <mxCell id="c_user" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;UserAccount&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- userId: Long&lt;br&gt;- username: String&lt;br&gt;- passwordHash: String&lt;br&gt;- active: boolean&lt;br&gt;&lt;hr&gt;+ authenticate(): boolean&lt;br&gt;+ deactivate(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="145" width="150" x="325" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_department" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Department&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- departmentId: Long&lt;br&gt;- name: String&lt;br&gt;- description: String&lt;br&gt;&lt;hr&gt;+ getEmployees(): List&amp;lt;Employee&amp;gt;&lt;br&gt;" vertex="1">
+          <mxGeometry height="125" width="190" x="120" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="c_employee" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Employee&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- employeeId: Long&lt;br&gt;- firstName: String&lt;br&gt;- lastName: String&lt;br&gt;- email: String&lt;br&gt;- phone: String&lt;br&gt;- address: String&lt;br&gt;- hireDate: Date&lt;br&gt;- jobTitle: String&lt;br&gt;- status: EmployeeStatus&lt;br&gt;&lt;hr&gt;+ viewProfile(): Employee&lt;br&gt;+ updateContactInfo(): void&lt;br&gt;+ updateOfficialInfo(): void&lt;br&gt;+ deactivate(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="235" width="175" x="610" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="c_team" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;TeamProject&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- teamId: Long&lt;br&gt;- name: String&lt;br&gt;- description: String&lt;br&gt;&lt;hr&gt;+ getMembers(): List&amp;lt;Employee&amp;gt;&lt;br&gt;" vertex="1">
+          <mxGeometry height="120" width="175" x="840" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="role_note" parent="1" style="shape=note;whiteSpace=wrap;html=1;fontSize=11;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" value="Role values include EMPLOYEE, SUPERVISOR and MANAGER_ADMIN. Supervisors and managers remain Employee records; their extra capabilities come from the role attached to UserAccount." vertex="1">
+          <mxGeometry height="112.5" width="190" x="80" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="c_asset" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Asset&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- assetId: Long&lt;br&gt;- assetName: String&lt;br&gt;- assetType: String&lt;br&gt;- serialNumber: String&lt;br&gt;- status: AssetStatus&lt;br&gt;&lt;hr&gt;+ register(): void&lt;br&gt;+ updateStatus(): void&lt;br&gt;+ isAvailable(): boolean&lt;br&gt;" vertex="1">
+          <mxGeometry height="175" width="150" x="1090" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="c_asset_assignment" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;AssetAssignment&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- assignmentId: Long&lt;br&gt;- assignedDate: Date&lt;br&gt;- returnedDate: Date&lt;br&gt;- status: AssignmentStatus&lt;br&gt;&lt;hr&gt;+ assign(): void&lt;br&gt;+ returnAsset(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="145" width="150" x="1420" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="c_leave_type" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;LeaveType&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- leaveTypeId: Long&lt;br&gt;- name: String&lt;br&gt;- description: String&lt;br&gt;&lt;hr&gt;+ update(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="120" width="120" x="90" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="c_leave_request" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;LeaveRequest&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- leaveRequestId: Long&lt;br&gt;- startDate: Date&lt;br&gt;- endDate: Date&lt;br&gt;- reason: String&lt;br&gt;- status: LeaveStatus&lt;br&gt;- submittedDate: DateTime&lt;br&gt;&lt;hr&gt;+ submit(): void&lt;br&gt;+ approve(): void&lt;br&gt;+ reject(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="175" width="150" x="490" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="c_leave_balance" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;LeaveBalance&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- balanceId: Long&lt;br&gt;- availableDays: Decimal&lt;br&gt;- usedDays: Decimal&lt;br&gt;&lt;hr&gt;+ calculateBalance(): Decimal&lt;br&gt;+ updateBalance(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="125" width="160" x="70" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="c_schedule" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;Schedule&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- scheduleId: Long&lt;br&gt;- periodStart: Date&lt;br&gt;- periodEnd: Date&lt;br&gt;- status: ScheduleStatus&lt;br&gt;- createdAt: DateTime&lt;br&gt;- updatedAt: DateTime&lt;br&gt;&lt;hr&gt;+ publish(): void&lt;br&gt;+ update(): void&lt;br&gt;+ checkConflicts(): boolean&lt;br&gt;" vertex="1">
+          <mxGeometry height="175" width="160" x="940" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="c_schedule_entry" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;ScheduleEntry&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- scheduleEntryId: Long&lt;br&gt;- workDate: Date&lt;br&gt;- startTime: Time&lt;br&gt;- endTime: Time&lt;br&gt;- notes: String&lt;br&gt;&lt;hr&gt;+ overlaps(other: ScheduleEntry): boolean&lt;br&gt;" vertex="1">
+          <mxGeometry height="205" width="300" x="1270" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="c_attendance" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=11;spacing=7;" value="&lt;div style=&#39;text-align:center&#39;&gt;&lt;b&gt;AttendanceRecord&lt;/b&gt;&lt;/div&gt;&lt;hr&gt;- attendanceId: Long&lt;br&gt;- attendanceDate: Date&lt;br&gt;- checkInTime: Time&lt;br&gt;- checkOutTime: Time&lt;br&gt;- status: AttendanceStatus&lt;br&gt;- workingHours: Decimal&lt;br&gt;- notes: String&lt;br&gt;&lt;hr&gt;+ calculateWorkingHours(): Decimal&lt;br&gt;+ updateCorrection(): void&lt;br&gt;" vertex="1">
+          <mxGeometry height="195" width="200" x="1260" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="r_role_user" edge="1" parent="1" source="c_role" style="endArrow=none;html=1;rounded=0;" target="c_user" value="assigned role">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_role_user_sm" connectable="0" parent="r_role_user" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_role_user_tm" connectable="0" parent="r_role_user" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_user_employee" edge="1" parent="1" source="c_user" style="endArrow=none;html=1;rounded=0;" target="c_employee" value="account for">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_user_employee_sm" connectable="0" parent="r_user_employee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_user_employee_tm" connectable="0" parent="r_user_employee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_dept_employee" edge="1" parent="1" source="c_department" style="endArrow=none;html=1;rounded=0;" target="c_employee" value="contains">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_dept_employee_sm" connectable="0" parent="r_dept_employee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_dept_employee_tm" connectable="0" parent="r_dept_employee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_team_employee" edge="1" parent="1" source="c_team" style="endArrow=none;html=1;rounded=0;" target="c_employee" value="includes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_team_employee_sm" connectable="0" parent="r_team_employee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_team_employee_tm" connectable="0" parent="r_team_employee" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint x="8" y="-13" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_supervises" edge="1" parent="1" source="c_employee" style="endArrow=none;html=1;rounded=0;loopStyle=orthogonalLoopStyle;" target="c_employee" value="supervises">
+          <mxGeometry relative="1" y="48" as="geometry">
+            <mxPoint x="5" y="-48" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_supervises_sm" connectable="0" parent="r_supervises" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint x="-5" y="-57" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_supervises_tm" connectable="0" parent="r_supervises" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint x="-5" y="-37" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_emp_leave" edge="1" parent="1" source="c_employee" style="endArrow=none;html=1;rounded=0;" target="c_leave_request" value="submits">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_emp_leave_sm" connectable="0" parent="r_emp_leave" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_emp_leave_tm" connectable="0" parent="r_emp_leave" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_leave_type" edge="1" parent="1" source="c_leave_type" style="endArrow=none;html=1;rounded=0;" target="c_leave_request" value="type">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_leave_type_sm" connectable="0" parent="r_leave_type" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_leave_type_tm" connectable="0" parent="r_leave_type" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_emp_balance" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;" value="has">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="410" y="510" />
+            </Array>
+            <mxPoint x="605" y="429.999771689498" as="sourcePoint" />
+            <mxPoint x="225" y="620.8673515981734" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_emp_balance_sm" connectable="0" parent="r_emp_balance" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_emp_balance_tm" connectable="0" parent="r_emp_balance" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_team_schedule" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="c_schedule" value="has schedules">
+          <mxGeometry relative="1" x="0.1525" y="1" as="geometry">
+            <mxPoint x="1" as="offset" />
+            <mxPoint x="959.9983870967742" y="230" as="sourcePoint" />
+            <mxPoint x="1042.417741935484" y="595" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_team_schedule_sm" connectable="0" parent="r_team_schedule" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_team_schedule_tm" connectable="0" parent="r_team_schedule" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_schedule_entry" edge="1" parent="1" source="c_schedule" style="startArrow=diamond;startFill=1;endArrow=none;html=1;rounded=0;" target="c_schedule_entry" value="contains">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_schedule_entry_sm" connectable="0" parent="r_schedule_entry" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_schedule_entry_tm" connectable="0" parent="r_schedule_entry" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_entry" edge="1" parent="1" source="c_employee" style="endArrow=none;html=1;rounded=0;" target="c_schedule_entry" value="assigned to">
+          <mxGeometry relative="1" x="0.2181" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_entry_sm" connectable="0" parent="r_employee_entry" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_entry_tm" connectable="0" parent="r_employee_entry" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_att" edge="1" parent="1" source="c_employee" style="endArrow=none;html=1;rounded=0;" target="c_attendance" value="has">
+          <mxGeometry relative="1" x="0.3267" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_att_sm" connectable="0" parent="r_employee_att" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_att_tm" connectable="0" parent="r_employee_att" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_schedule_leave" edge="1" parent="1" source="c_schedule" style="dashed=1;endArrow=open;endFill=0;html=1;rounded=0;" target="c_leave_request" value="checks approved leave">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_asset_assignment" edge="1" parent="1" source="c_asset" style="endArrow=none;html=1;rounded=0;" target="c_asset_assignment" value="assignment history">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="r_asset_assignment_sm" connectable="0" parent="r_asset_assignment" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_asset_assignment_tm" connectable="0" parent="r_asset_assignment" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_asset" edge="1" parent="1" source="c_employee" style="endArrow=none;html=1;rounded=0;" target="c_asset_assignment" value="receives">
+          <mxGeometry relative="1" x="0.236" y="4" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="830" y="380" />
+              <mxPoint x="1350" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_asset_sm" connectable="0" parent="r_employee_asset" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.82" y="-1" as="geometry">
+            <mxPoint x="-30" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="r_employee_asset_tm" connectable="0" parent="r_employee_asset" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="0.82" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
