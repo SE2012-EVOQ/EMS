@@ -1,0 +1,7 @@
+import { Pencil } from 'lucide-react'
+import StatusBadge from '../../../components/common/StatusBadge'
+import { fmtDate } from '../../../components/common/date'
+
+export default function AttendanceTable({ rows, employeeById, canEdit, onEdit }) {
+  return <div className="overflow-x-auto"><table className="w-full min-w-[720px]"><thead><tr className="text-left text-[10px] uppercase tracking-wider text-app-muted muted"><th className="pb-3">Employee</th><th className="pb-3">Date</th><th className="pb-3">Status</th><th className="pb-3">In</th><th className="pb-3">Out</th><th className="pb-3">Hours</th><th className="pb-3">Note</th>{canEdit&&<th/>}</tr></thead><tbody>{rows.map(x=><tr key={x.id} className="border-t border-app-border"><td className="py-3 text-xs font-bold txt">{employeeById(x.employee)?.name}</td><td className="py-3 text-xs text-app-muted muted">{fmtDate(x.date)}</td><td className="py-3"><StatusBadge status={x.status}/></td><td className="py-3 text-xs font-semibold txt">{x.checkIn}</td><td className="py-3 text-xs font-semibold txt">{x.checkOut}</td><td className="py-3 text-xs font-semibold txt">{x.hours}</td><td className="py-3 text-[10px] text-app-muted muted">{x.note||'—'}</td>{canEdit&&<td className="py-3 text-right"><button onClick={()=>onEdit(x)} className="w-8 h-8 rounded-full hover:bg-app-subtle"><Pencil className="w-3.5 h-3.5 mx-auto"/></button></td>}</tr>)}</tbody></table></div>
+}

@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+      color-scheme: light;
+      --ease-fluid: cubic-bezier(.22, 1, .36, 1);
+      --ease-soft: cubic-bezier(.4, 0, .2, 1);
+    }
+
+    html, body { height: 100%; }
+    body { overflow: hidden; }
+    body.dark { color-scheme: dark; }
+
+    * { scrollbar-width: thin; scrollbar-color: #d6d8dc transparent; }
+    *::-webkit-scrollbar { width: 8px; height: 8px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: #d6d8dc; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+    body.dark * { scrollbar-color: #3a414a transparent; }
+    body.dark *::-webkit-scrollbar-thumb { background: #3a414a; border: 2px solid transparent; background-clip: padding-box; }
+
+    button, a, input, select, textarea {
+      transition-property: background-color, border-color, color, box-shadow, opacity, transform;
+      transition-duration: 180ms;
+      transition-timing-function: var(--ease-soft);
+    }
+    button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    button:not(:disabled):active { transform: scale(.975); }
+    button:disabled { cursor: not-allowed; opacity: .55; }
+    button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(90,124,247,.18), 0 0 0 1px rgba(90,124,247,.55);
+    }
+
+    /* Page navigation is intentionally instant. Motion is reserved for local UI
+       elements such as modals, popovers, toasts and the mobile drawer. */
+    #page { view-transition-name: none; }
+    .page-enter { animation: none; transform: none; filter: none; }
+
+    .modal-backdrop {
+      background: rgba(15,18,22,.38);
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+    }
+    .modal-layer { animation: veilIn .20s ease-out both; }
+    .modal-panel { animation: modalIn .30s var(--ease-fluid) both; transform-origin: 50% 45%; }
+    .modal-layer.is-closing { animation: veilOut .16s ease-in both; }
+    .modal-layer.is-closing .modal-panel { animation: modalOut .16s ease-in both; }
+    @keyframes veilIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes veilOut { from { opacity: 1; } to { opacity: 0; } }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(18px) scale(.975); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes modalOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(9px) scale(.985); } }
+
+    .login-layer { animation: veilIn .24s ease-out both; }
+    .login-card { animation: loginIn .42s var(--ease-fluid) both; }
+    @keyframes loginIn { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: none; } }
+
+    .floating-panel { transform-origin: top right; }
+    .floating-panel:not(.hidden) { animation: popoverIn .20s var(--ease-fluid) both; }
+    @keyframes popoverIn { from { opacity: 0; transform: translateY(-6px) scale(.975); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .toast { animation: toastIn .28s var(--ease-fluid); }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+
+    .surface, .subtle { transition: background-color .32s ease, border-color .32s ease, box-shadow .32s ease, color .32s ease; }
+    .surface { box-shadow: 0 8px 30px rgba(0,0,0,.04); }
+    button.surface:hover, button.subtle:hover { transform: translateY(-1px); }
+    tbody tr { transition: background-color .16s ease; }
+    tbody tr:hover { background: rgba(26,29,31,.018); }
+
+    .switch { position: relative; width: 38px; height: 22px; border-radius: 999px; background: #dfe1e5; transition: .24s var(--ease-fluid); }
+    .switch:after { content: ''; position: absolute; width: 16px; height: 16px; top: 3px; left: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: .24s var(--ease-fluid); }
+    .switch.on { background: #1A1D1F; }
+    .switch.on:after { transform: translateX(16px); }
+
+    .theme-switcher { background: #e7e8eb; padding: 3px; border-radius: 999px; gap: 2px !important; }
+    .theme-switcher .theme-button { width: 34px; height: 34px; border-radius: 999px; }
+    .theme-switcher .theme-selected { background: #fff !important; color: #1A1D1F !important; box-shadow: 0 3px 10px rgba(15,18,22,.10); }
+
+    .clip-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .calendar-grid { display:grid; grid-template-columns: 86px repeat(5,minmax(150px,1fr)); min-width: 830px; }
+    .calendar-cell { min-height: 92px; border-right: 1px solid #efefef; border-bottom: 1px solid #efefef; padding: 8px; transition: background-color .25s ease, border-color .25s ease; }
+    .no-select { user-select:none; }
+
+    /* Refined graphite dark mode */
+    body.dark { background: #0d0f12 !important; color: #f3f5f7; }
+    body.dark #app-shell { background: #0f1115 !important; }
+    body.dark .bg-app-bg { background: #0f1115 !important; }
+    body.dark .bg-white:not(.brandmark):not(.theme-selected) { background: #171a1f !important; }
+    body.dark #sidebar {
+      background: #101318 !important;
+      border-right: 1px solid #1c2128;
+      box-shadow: 12px 0 38px rgba(0,0,0,.08);
+    }
+    body.dark header { background: linear-gradient(180deg, rgba(15,17,21,.98) 0%, rgba(15,17,21,.82) 72%, rgba(15,17,21,0) 100%); }
+
+    body.dark .surface,
+    body.dark .bg-white.surface {
+      background: #171a1f !important;
+      border-color: #252a31 !important;
+      box-shadow: 0 10px 34px rgba(0,0,0,.20) !important;
+    }
+    body.dark .subtle,
+    body.dark .bg-app-subtle {
+      background: #1d2127 !important;
+      border-color: #292f37 !important;
+    }
+    body.dark .txt, body.dark .text-app-text { color: #f3f5f7 !important; }
+    body.dark .muted, body.dark .text-app-muted { color: #9199a4 !important; }
+    body.dark .text-gray-400 { color: #737c87 !important; }
+    body.dark .text-gray-500 { color: #818a95 !important; }
+
+    body.dark .border-app-border,
+    body.dark .border-gray-100,
+    body.dark .border-gray-200,
+    body.dark .border-gray-300 { border-color: #2a3038 !important; }
+
+    body.dark input, body.dark select, body.dark textarea {
+      background: #1c2026 !important;
+      border-color: #2b323a !important;
+      color: #f3f5f7 !important;
+      caret-color: #f3f5f7;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+    }
+    body.dark input::placeholder, body.dark textarea::placeholder { color: #68717d !important; }
+    body.dark option { background: #171a1f; color: #f3f5f7; }
+
+    body.dark .nav-active {
+      position: relative;
+      background: #20252c !important;
+      color: #ffffff !important;
+      box-shadow: inset 0 0 0 1px #2c333c, 0 8px 20px rgba(0,0,0,.16) !important;
+    }
+    body.dark .nav-active::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 50%;
+      width: 3px;
+      height: 16px;
+      border-radius: 999px;
+      background: #dfe6ee;
+      transform: translateY(-50%);
+    }
+    body.dark .hover-surface:hover,
+    body.dark button.surface:hover,
+    body.dark button.subtle:hover { background: #22272e !important; }
+
+    body.dark .dark-primary {
+      background: #eef1f4 !important;
+      color: #121519 !important;
+      border-color: #eef1f4 !important;
+      box-shadow: 0 5px 18px rgba(0,0,0,.22);
+    }
+    body.dark button.dark-primary:hover { background: #ffffff !important; color: #0d0f12 !important; }
+    body.dark .dark-primary.text-white { color: #121519 !important; }
+
+    body.dark .avatar-soft { background: #273142 !important; color: #dce7ff !important; border-color: #343e4d !important; }
+    body.dark .brandmark { background: #f4f6f8 !important; border-color: #f4f6f8 !important; }
+    body.dark .brandmark > div { border-color: #111318 !important; }
+
+    body.dark .bg-app-green-bg { background: rgba(73,190,127,.13) !important; }
+    body.dark .text-app-green { color: #71d7a1 !important; }
+    body.dark .bg-app-blue-bg { background: rgba(101,135,255,.14) !important; }
+    body.dark .text-app-blue { color: #91a8ff !important; }
+    body.dark .bg-app-amber-bg { background: rgba(228,167,44,.13) !important; }
+    body.dark .text-app-amber { color: #edbe5d !important; }
+    body.dark .bg-app-pink-bg { background: rgba(232,99,111,.13) !important; }
+    body.dark .text-app-pink { color: #f08a94 !important; }
+    body.dark .bg-gray-100 { background: #232830 !important; }
+    body.dark .status-flex { background: rgba(139,111,238,.14) !important; color: #b8a7ff !important; }
+
+    body.dark .theme-switcher { background: #171b20; border: 1px solid #252b33; }
+    body.dark .theme-switcher .theme-selected { background: #eef1f4 !important; color: #121519 !important; box-shadow: 0 4px 14px rgba(0,0,0,.28); }
+
+    body.dark .calendar-cell { border-color: #292f37; }
+    body.dark tbody tr:hover { background: rgba(255,255,255,.018); }
+    body.dark .modal-backdrop { background: rgba(4,6,9,.64); }
+    body.dark #mobileBackdrop { background: rgba(2,4,7,.58); }
+
+    body.theme-animating,
+    body.theme-animating #app-shell,
+    body.theme-animating #sidebar,
+    body.theme-animating header,
+    body.theme-animating .surface,
+    body.theme-animating .subtle,
+    body.theme-animating input,
+    body.theme-animating select,
+    body.theme-animating textarea,
+    body.theme-animating button,
+    body.theme-animating .calendar-cell {
+      transition: background-color .34s ease, color .34s ease, border-color .34s ease, box-shadow .34s ease !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+    }
+
+@layer base {
+  body { @apply bg-app-bg font-sans text-app-text antialiased; }
+}
