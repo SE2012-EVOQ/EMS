@@ -242,6 +242,10 @@ Database credentials must not be committed to Git.
 
 The backend reads local database configuration from environment variables.
 
+`DB_USERNAME` and `DB_PASSWORD` set the database credentials. `DB_URL` can
+override the default local MySQL URL, and `SERVER_PORT` can override the
+default port `8080`.
+
 Example macOS/Linux:
 
 ```bash
