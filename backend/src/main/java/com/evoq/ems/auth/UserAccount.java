@@ -38,6 +38,14 @@ public class UserAccount {
     protected UserAccount() {
     }
 
+    public UserAccount(Long employeeId, Role role, String username, String passwordHash, boolean active) {
+        this.employeeId = employeeId;
+        this.role = role;
+        this.username = username;
+        this.passwordHash = passwordHash;
+        this.active = active;
+    }
+
     public Long getId() {
         return id;
     }
@@ -50,6 +58,10 @@ public class UserAccount {
         return role;
     }
 
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
     public String getUsername() {
         return username;
     }
@@ -60,6 +72,10 @@ public class UserAccount {
 
     public boolean isActive() {
         return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public void setPasswordHash(String passwordHash) {
