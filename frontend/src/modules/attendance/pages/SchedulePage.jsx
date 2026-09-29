@@ -54,8 +54,8 @@ export default function SchedulePage() {
   }
 
   return <>
-    <PageHeader title="Schedule" description={supervisor ? 'Plan, validate and publish shifts for your permitted team.' : 'View your published shifts and record attendance for today.'} actions={supervisor && <button type="button" disabled={!teamId || !employees.length} onClick={() => setEditor({ mode: 'create' })} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><CalendarPlus className="h-4 w-4" />Create schedule</button>} />
-    {!supervisor && <TodayAttendanceActions />}
+    <PageHeader title="Schedule" description={supervisor ? 'Plan team shifts and record your own attendance when scheduled.' : 'View your published shifts and record attendance for today.'} actions={supervisor && <button type="button" disabled={!teamId || !employees.length} onClick={() => setEditor({ mode: 'create' })} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><CalendarPlus className="h-4 w-4" />Create schedule</button>} />
+    <TodayAttendanceActions />
     {supervisor && teams.length > 0 && <div className="mb-5 flex items-center gap-3"><label htmlFor="schedule-team" className="text-xs font-bold text-app-muted">Team</label><select id="schedule-team" value={teamId} onChange={event => setTeamId(event.target.value)} className="min-w-56 rounded-xl border border-app-border bg-white px-3 py-2.5 text-xs font-semibold txt">{teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select></div>}
     {error && <div role="alert" className="mb-4 rounded-xl bg-app-pink-bg px-4 py-3 text-xs font-semibold text-app-pink">{error}</div>}
     {loading ? <Card><div role="status" className="flex items-center justify-center gap-2 py-12 text-xs font-semibold text-app-muted"><LoaderCircle className="h-4 w-4 animate-spin" />Loading schedules…</div></Card>

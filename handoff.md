@@ -3,14 +3,14 @@
 **Updated:** 29 September 2026 (Asia/Colombo)
 **Repository:** `/Users/nadhi/Main/Uni/Y2S1 - current/OOAD/Project/EMS`
 **Branch:** `Nadhi` (verified)
-**State:** Final Attendance & Scheduling handoff for branch `Nadhi`. The implementation is in the existing `c613bce` (`progress`) commit; the final commit adds repeat-action integration assertions and this handoff.
+**State:** Attendance & Scheduling implementation, integration assertions, and supervisor personal attendance UI are on branch `Nadhi`.
 **Boundary:** Frozen schema, shared authentication, and teammate-owned Employee, Leave, and Asset business modules were not modified.
 
 ## Implemented workflow
 
-Supervisor creates or updates a team schedule and publishes it. Employees see only their own published shifts. An authenticated user can check in only for their own published shift on the server's current date and only from the scheduled start through exactly 30 minutes after it, inclusive. The server creates a PRESENT row with its own employee/date/time and `0.00` hours. After that check-in, the employee can check out on the same server date; the server stores checkout and calculates hours rounded HALF_UP to two decimals.
+Supervisor creates or updates a team schedule and publishes it. Users see only their own published shifts in their personal attendance card; supervisors also see the permitted team schedule planner. An authenticated user can check in only for their own published shift on the server's current date and only from the scheduled start through exactly 30 minutes after it, inclusive. The server creates a PRESENT row with its own employee/date/time and `0.00` hours. After that check-in, the employee can check out on the same server date; the server stores checkout and calculates hours rounded HALF_UP to two decimals.
 
-The frontend reads the server's today state for check-in availability. Commands accept no client attendance payload. Attendance reads remain scoped to self, supervisor's active direct reports in the supervisor's team, or organization-wide for MANAGER_ADMIN. Manager/Admin can correct rows or create an exceptional record for missed/incorrect attendance; notes are optional. Attendance LEAVE does not call LeaveRequest. No approval, biometric, GPS, or automatic lateness threshold was added. A valid self check-in is PRESENT; LATE remains an administrative status.
+The frontend reads the server's today state for check-in availability. Check in and Check out remain visible but disabled when the action is unavailable, including for supervisors with no personal published shift. Commands accept no client attendance payload. Attendance reads remain scoped to self, supervisor's active direct reports in the supervisor's team, or organization-wide for MANAGER_ADMIN. Supervisor team attendance is read only. Manager/Admin can correct rows or create an exceptional record for missed/incorrect attendance; notes are optional. Attendance LEAVE does not call LeaveRequest. No approval, biometric, GPS, or automatic lateness threshold was added. A valid self check-in is PRESENT; LATE remains an administrative status.
 
 ## Schedule rules and frozen-schema consequence
 
@@ -96,7 +96,7 @@ No `ScheduleConflictService` was added; schedule, overlap, and leave validation 
 - Full backend suite against local MySQL: **31 passed** (8 Attendance service, 7 Schedule service, 5 Attendance API security, 3 Schedule API security, 1 MySQL workflow, 2 password, 3 auth HTTP flow, 1 account persistence, 1 application context). The MySQL workflow test creates and publishes a schedule, checks in and out with fixed server clocks, verifies `8.10` hours, and rejects repeated check-in/check-out. Its transaction rolls back.
 - Rechecked after the demo: `set -a; source .env; ./mvnw -q -DargLine=-javaagent:/Users/nadhi/.m2/repository/org/mockito/mockito-core/5.23.0/mockito-core-5.23.0.jar test` exited 0, and every Surefire report shows zero failures and errors. The MySQL workflow test requires the local database and dev credentials to be available; a run without database access cannot pass that integration test.
 - Backend: `./mvnw -q -DskipTests package` passed.
-- Frontend: `npm run build` passed. Vite reported its existing large-bundle advisory for the ~849 kB generated JS bundle.
+- Frontend: `npm run build` passed after the supervisor visibility fix. Vite reported its large-bundle advisory for the ~877 kB generated JS bundle.
 - `git diff --check` passed.
 - Branch verified as exactly `Nadhi` before final delivery.
 - The local MySQL application context passed Hibernate schema validation against the existing frozen schema. The dev fixture assigned the demo supervisor and employee to `Development Scheduling Team` and set the employee's supervisor. The fixture itself created no business rows.
