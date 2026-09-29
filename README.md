@@ -352,9 +352,9 @@ With the example password `EvoqDemo2026!`, sign in at
 The example password is public and is only for local development. Use the same
 `DEV_DEMO_PASSWORD` value across your team if you want identical credentials.
 Do not enable the `dev` profile against a production database. These accounts
-let you inspect the protected shell and empty module pages; business data
-appears only when the modules have real API integrations. The legitimate first
-Manager/Admin bootstrap and normal Employee onboarding remain separate work.
+let you inspect the protected app. Employee, attendance, schedule, and asset
+pages now use their APIs; leave, dashboard, and reports still await integration.
+A legitimate first Manager/Admin bootstrap remains separate work.
 
 Login uses a server-side Spring Security session. The browser stores only the
 HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
@@ -365,8 +365,8 @@ fetches a fresh token because Spring rotates the session's CSRF state.
 
 An authenticated user can change a temporary password from the account menu.
 Forced first-login password change is deferred because the frozen schema has
-no flag for it. Normal account creation remains an integration point for the
-Employee module owner; the dev initializer is only for reserved demo access.
+no flag for it. Employee onboarding can optionally create a login account;
+the dev initializer is only for reserved demo access.
 
 ---
 
@@ -583,8 +583,11 @@ Shared API functionality belongs under:
 src/services/
 ```
 
-Business module pages currently show empty states. They do not create, edit,
-or display business records until their real API integrations are implemented.
+Employee, attendance, schedule, and asset pages now load data from their APIs.
+Employee and attendance/schedule pages also provide management actions. The asset
+page currently lists records; its register, update, assign, and return actions
+are available through the API but do not yet have page controls. Leave, dashboard,
+and reports still show empty states.
 
 ---
 
@@ -670,25 +673,30 @@ React/Vite frontend foundation
 Spring Boot backend foundation
 MySQL database
 Spring Data JPA connection
-Spring Security dependency
+Session authentication, CSRF protection, and account password changes
 /api/health endpoint
 Finalized database schema
 Required role reference data
 Database validation scripts
+Employee and organization API with directory, onboarding, and edit UI
+Attendance and scheduling APIs with role-aware pages and workflows
+Asset register and assignment APIs (register, update, assign, return, and history)
+Asset page listing records from the API
+Authentication, employee, and attendance/scheduling tests
 ```
 
 Still under development:
 
 ```text
-First Manager/Admin account bootstrap and Employee account provisioning
-Module-specific role authorization
-Employee API integration
+First Manager/Admin account bootstrap
+Complete module-specific role authorization
 Leave API integration
-Attendance & Scheduling API integration
-Asset API integration
-Testing
+Asset page controls for register, update, assign, return, and assignment history
+Dashboard metrics and reports integration
+Broader integration testing, including asset workflows
 Deployment
 ```
 
-The frontend keeps the shared layout and module routes, but it does not invent
-business records or dashboard metrics. Business pages await their real APIs.
+The frontend does not invent business records or dashboard metrics. Connected
+pages show database records or a genuine empty state; dashboard, leave, and
+reports still await their data sources.
