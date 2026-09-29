@@ -11,16 +11,16 @@ const stateLabel = {
 export default function TodayAttendanceActions() {
   const [today, setToday] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [working, setWorking] = useState(false)
+  const [working, setWorking] = useState(null)
   const [error, setError] = useState('')
   const refresh = async () => {
     setError('')
     try { setToday(await attendanceService.today()) } catch (err) { setError(err.message) } finally { setLoading(false) }
   }
   useEffect(() => { refresh() }, [])
-  const act = async operation => {
-    setWorking(true); setError('')
-    try { await operation(); await refresh() } catch (err) { setError(err.message) } finally { setWorking(false) }
+  const act = async (action, operation) => {
+    setWorking(action); setError('')
+    try { await operation(); await refresh() } catch (err) { setError(err.message) } finally { setWorking(null) }
   }
 
   return <section className="surface mb-5 rounded-[24px] border border-app-border/50 bg-white p-5 shadow-card sm:p-6" aria-label="Today's attendance">
@@ -33,8 +33,8 @@ export default function TodayAttendanceActions() {
         </>}</div>
       <div className="flex gap-2">
         <button type="button" onClick={refresh} disabled={working} title="Refresh server status" className="rounded-xl border border-app-border p-2.5 text-app-muted"><RefreshCw className="h-4 w-4" /></button>
-        {today?.canCheckIn && <button type="button" onClick={() => act(attendanceService.checkIn)} disabled={working} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogIn className="h-4 w-4" />{working ? 'Checking in…' : 'Check in'}</button>}
-        {today?.canCheckOut && <button type="button" onClick={() => act(attendanceService.checkOut)} disabled={working} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogOut className="h-4 w-4" />{working ? 'Checking out…' : 'Check out'}</button>}
+        <button type="button" onClick={() => act('in', attendanceService.checkIn)} disabled={loading || working || !today?.canCheckIn} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogIn className="h-4 w-4" />{working === 'in' ? 'Checking in…' : 'Check in'}</button>
+        <button type="button" onClick={() => act('out', attendanceService.checkOut)} disabled={loading || working || !today?.canCheckOut} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogOut className="h-4 w-4" />{working === 'out' ? 'Checking out…' : 'Check out'}</button>
       </div>
     </div>
     <p className="mt-3 text-[10px] text-app-muted">The server decides whether check-in is allowed and records all attendance times.</p>
