@@ -284,6 +284,43 @@ jdbc:mysql://localhost:3306/evoq_ems
 
 Hibernate is configured to validate the existing database schema rather than replace it.
 
+## Development demo sign-in
+
+Run the finalized schema and sample-data scripts first. Their fictional
+`user_account.password_hash` values start as
+`DEMO_HASH_REPLACE_DURING_SETUP`. For local demos, start the backend with an
+explicit `dev` profile and a locally chosen password:
+
+```bash
+export SPRING_PROFILES_ACTIVE=dev
+export DEMO_PASSWORD="choose-a-local-demo-password"
+export DB_USERNAME=root
+export DB_PASSWORD="your-local-mysql-password"
+./mvnw spring-boot:run
+```
+
+The dev-only initializer BCrypt-encodes `DEMO_PASSWORD` and updates only rows
+whose hash is still the exact placeholder. It does not change an initialized
+account on later starts. It never runs outside the `dev` profile. Do not use a
+personal password or commit a real password. The five finalized SQL files
+remain unchanged.
+
+Sample usernames include `maya.fernando` (Manager/Admin), `dilan.perera`
+(Supervisor), and `arjun.jayasinghe` (Employee). They share the locally chosen
+demo password until changed individually.
+
+Login uses a server-side Spring Security session. The browser stores only the
+HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
+React first requests `GET /api/auth/csrf` and sends that token in a header on
+login, logout, change-password, and other modifying requests. After login it
+fetches a fresh token because Spring rotates the session's CSRF state.
+`GET /api/auth/me` returns only user ID, employee ID, username, and role.
+
+An authenticated user can change a temporary password from the account menu.
+Forced first-login password change is deferred because the frozen schema has
+no flag for it. Account creation remains an integration point for the Employee
+module owner; this shared auth work does not create Employee records.
+
 ---
 
 # Frontend Setup
@@ -600,8 +637,8 @@ Database validation scripts
 Still under development:
 
 ```text
-Real authentication
-Role-based authorization
+End-to-end authentication smoke testing with local MySQL credentials
+Module-specific role authorization
 Employee API integration
 Leave API integration
 Attendance & Scheduling API integration
