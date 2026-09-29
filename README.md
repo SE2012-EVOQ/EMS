@@ -18,8 +18,7 @@ source .env
 ```
 
 `backend/.env` is a local, Git-ignored file. It must contain exported values for
-`DB_USERNAME`, `DB_PASSWORD`, `SPRING_PROFILES_ACTIVE=dev`, and
-`DEMO_PASSWORD` for the seeded demo accounts. Spring Boot does not read this
+`DB_USERNAME` and `DB_PASSWORD`. Spring Boot does not read this
 file automatically; `source .env` loads it into the terminal before Maven
 starts. Keep this terminal open. Wait for `Started EvoqEmsBackendApplication`,
 then check [http://localhost:8080/api/health](http://localhost:8080/api/health).
@@ -183,6 +182,10 @@ mysql -u root -p < database/02_sample_data.sql
 ```
 
 Enter your own local MySQL password when prompted.
+`02_sample_data.sql` now inserts only the three required roles:
+`EMPLOYEE`, `SUPERVISOR`, and `MANAGER_ADMIN`. It creates no employees,
+accounts, departments, teams, leave, attendance, schedules, or assets. A
+freshly initialized database has no login account.
 
 To verify the database:
 
@@ -194,7 +197,9 @@ The validation queries should report no integrity problems.
 
 `03_queries.sql` contains project/demo queries.
 
-`05_negative_constraint_tests.sql` intentionally attempts invalid operations to demonstrate database constraints. Do not treat expected errors from this file as application failures.
+`05_negative_constraint_tests.sql` uses sample IDs and must not be run against
+an empty database. It intentionally attempts invalid operations to demonstrate
+database constraints after suitable test records exist.
 
 ## Database Tables
 
@@ -298,8 +303,6 @@ For a new checkout, create the ignored `backend/.env` with your own values:
 ```dotenv
 export DB_USERNAME="root"
 export DB_PASSWORD="your-local-mysql-password"
-export SPRING_PROFILES_ACTIVE="dev"
-export DEMO_PASSWORD="choose-a-local-demo-password"
 ```
 
 Windows PowerShell:
@@ -322,28 +325,18 @@ jdbc:mysql://localhost:3306/evoq_ems
 
 Hibernate is configured to validate the existing database schema rather than replace it.
 
-## Development demo sign-in
+## Authentication on a fresh database
 
-Run the finalized schema and sample-data scripts first. Their fictional
-`user_account.password_hash` values start as
-`DEMO_HASH_REPLACE_DURING_SETUP`. For local demos, put an explicit `dev`
-profile and a locally chosen password in `backend/.env`, then run:
+There are no pre-created employees or login accounts. The previous demo
+usernames and `DEMO_PASSWORD` cannot be used after a fresh database setup.
+The three role rows are available for future accounts, but Employee onboarding
+and linked account provisioning still need to be integrated with the Employee
+module. Until an account is created, the sign-in page has no valid credentials.
 
-```bash
-cd backend
-source .env
-./mvnw spring-boot:run
-```
-
-The dev-only initializer BCrypt-encodes `DEMO_PASSWORD` and updates only rows
-whose hash is still the exact placeholder. It does not change an initialized
-account on later starts. It never runs outside the `dev` profile. Do not use a
-personal password or commit a real password. The five finalized SQL files
-remain unchanged.
-
-Sample usernames include `maya.fernando` (Manager/Admin), `dilan.perera`
-(Supervisor), and `arjun.jayasinghe` (Employee). They share the locally chosen
-demo password until changed individually.
+The development-only placeholder password initializer remains in the auth
+foundation for older local databases. It only updates accounts whose stored
+hash is exactly `DEMO_HASH_REPLACE_DURING_SETUP`; the current seed SQL creates
+none, so it does nothing on a fresh database.
 
 Login uses a server-side Spring Security session. The browser stores only the
 HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
@@ -667,7 +660,7 @@ Spring Data JPA connection
 Spring Security dependency
 /api/health endpoint
 Finalized database schema
-Sample database dataset
+Required role reference data
 Database validation scripts
 ```
 
