@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import { createMockDatabase, DEMO_TODAY } from '../data/mock/mockDatabase'
+import { useAuth } from './AuthContext'
 
 const EmsContext = createContext(null)
 
@@ -10,9 +11,11 @@ const roleProfiles = {
 }
 
 export function EmsProvider({ children }) {
+  const { user } = useAuth()
   const [db, setDb] = useState(() => createMockDatabase())
-  const [role, setRole] = useState('admin')
+  const role = user?.role === 'MANAGER_ADMIN' ? 'admin' : user?.role === 'SUPERVISOR' ? 'supervisor' : 'employee'
 
+  // Module pages still use prototype records; the signed-in identity comes from AuthContext.
   const profile = roleProfiles[role]
   const currentEmployee = db.employees.find(e => e.id === profile.employeeId)
   const employeeById = id => db.employees.find(e => e.id === id)
@@ -175,7 +178,7 @@ export function EmsProvider({ children }) {
   })
 
   const value = useMemo(() => ({
-    db, role, setRole, roleProfiles, profile, currentEmployee, employeeById, directReports,
+    db, role, roleProfiles, profile, currentEmployee, employeeById, directReports,
     teamForSupervisor, currentAssetAssignment, assetAssignmentsForEmployee, scheduleForTeam,
     entriesForTeam, approvedLeaveOn, allowedEmployees, allowedLeave, allowedAttendance, allowedAssets,
     requestLeave, decideLeave, saveAttendance, saveScheduleEntry, saveEmployee, deactivateEmployee,

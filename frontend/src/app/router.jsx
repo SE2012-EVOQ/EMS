@@ -1,4 +1,7 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
+import RequireAuth from './RequireAuth'
+import LoginPage from './LoginPage'
+import ChangePasswordPage from './ChangePasswordPage'
 import AppLayout from '../components/layout/AppLayout'
 import DashboardPage from '../modules/dashboard/pages/DashboardPage'
 import EmployeesPage from '../modules/employees/pages/EmployeesPage'
@@ -9,12 +12,14 @@ import AssetsPage from '../modules/assets/pages/AssetsPage'
 import ReportsPage from '../modules/reports/pages/ReportsPage'
 
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: <RequireAuth><AppLayout /></RequireAuth>,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
+      { path: 'account/password', element: <ChangePasswordPage /> },
       { path: 'employees', element: <EmployeesPage /> },
       { path: 'leave', element: <LeavePage /> },
       { path: 'attendance', element: <AttendancePage /> },
