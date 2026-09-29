@@ -1,6 +1,7 @@
 package com.evoq.ems.attendance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -22,11 +23,13 @@ import com.evoq.ems.attendance.service.AttendanceService;
 import com.evoq.ems.attendance.service.ScheduleService;
 import com.evoq.ems.attendance.web.ScheduleDtos.EntryRequest;
 import com.evoq.ems.attendance.web.ScheduleDtos.WriteRequest;
+import com.evoq.ems.attendance.web.AttendanceModuleException;
 import com.evoq.ems.auth.AccountPrincipal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,11 +74,15 @@ class AttendanceMySqlWorkflowTests {
         assertEquals(AttendanceRecord.Status.PRESENT, checkedIn.status());
         assertEquals(LocalTime.of(9, 7), checkedIn.checkIn());
         assertEquals(new BigDecimal("0.00"), checkedIn.hours());
+        assertEquals(HttpStatus.CONFLICT, assertThrows(AttendanceModuleException.class,
+                () -> checkInService.checkIn(employee)).status());
 
         AttendanceService checkOutService = attendanceAt("2099-01-15T17:13:00Z");
         var checkedOut = checkOutService.checkOut(employee);
         assertEquals(LocalTime.of(17, 13), checkedOut.checkOut());
         assertEquals(new BigDecimal("8.10"), checkedOut.hours());
+        assertEquals(HttpStatus.CONFLICT, assertThrows(AttendanceModuleException.class,
+                () -> checkOutService.checkOut(employee)).status());
         assertEquals(1, records.findByEmployeeIdAndAttendanceDateBetweenOrderByAttendanceDateDescIdDesc(
                 employeeId, workDate, workDate).size());
     }
