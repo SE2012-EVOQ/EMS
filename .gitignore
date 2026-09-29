@@ -24,3 +24,6 @@ backend/.env.*
 
 # Local planning handoff
 /handoff.md
+
+# Database backups
+database/backup_*.sql
