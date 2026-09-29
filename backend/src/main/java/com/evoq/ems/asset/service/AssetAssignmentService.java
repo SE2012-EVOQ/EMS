@@ -32,7 +32,7 @@ public class AssetAssignmentService {
 
         // Asset must be available before assignment
         if (!"AVAILABLE".equalsIgnoreCase(asset.getStatus())) {
-            throw new RuntimeException("Asset is not available for assignment");
+            throw new IllegalArgumentException("Asset is not available for assignment");
         }
 
         AssetAssignment assignment = new AssetAssignment();
@@ -63,7 +63,7 @@ public class AssetAssignmentService {
         if ("RETURNED".equalsIgnoreCase(
                 assignment.getAssignmentStatus())) {
 
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "This asset has already been returned");
         }
 
