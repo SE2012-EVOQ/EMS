@@ -8,6 +8,8 @@ The system uses a React frontend, Spring Boot REST backend, and MySQL relational
 
 Start MySQL first. The `evoq_ems` database must already exist (see [Database Setup](#database-setup)).
 The frontend and backend are separate processes: opening the frontend does not start the API.
+For a new checkout, run `cp backend/.env.example backend/.env` from the repository
+root and replace the MySQL password in `backend/.env` with your own.
 
 In **terminal 1**, from the repository root (macOS/Linux):
 
@@ -17,8 +19,8 @@ source .env
 ./mvnw spring-boot:run
 ```
 
-`backend/.env` is a local, Git-ignored file. It must contain exported values for
-`DB_USERNAME` and `DB_PASSWORD`. Spring Boot does not read this
+`backend/.env` is a local, Git-ignored file. Copy `backend/.env.example` and
+set your own `DB_USERNAME` and `DB_PASSWORD`. Spring Boot does not read this
 file automatically; `source .env` loads it into the terminal before Maven
 starts. Keep this terminal open. Wait for `Started EvoqEmsBackendApplication`,
 then check [http://localhost:8080/api/health](http://localhost:8080/api/health).
@@ -297,11 +299,15 @@ source .env
 ./mvnw spring-boot:run
 ```
 
-For a new checkout, create the ignored `backend/.env` with your own values:
+For a new checkout, copy `backend/.env.example` to the ignored
+`backend/.env` and replace the MySQL password with your own. The example
+also enables the explicit `dev` profile and its public demo login password:
 
 ```dotenv
 export DB_USERNAME="root"
 export DB_PASSWORD="your-local-mysql-password"
+export SPRING_PROFILES_ACTIVE="dev"
+export DEV_DEMO_PASSWORD="EvoqDemo2026!"
 ```
 
 Windows PowerShell:
@@ -324,13 +330,31 @@ jdbc:mysql://localhost:3306/evoq_ems
 
 Hibernate is configured to validate the existing database schema rather than replace it.
 
-## Authentication on a fresh database
+## Development sign-in
 
-There are no pre-created employees or login accounts. Previous demo usernames
-cannot be used after a fresh database setup.
-The three role rows are available for future accounts, but Employee onboarding
-and linked account provisioning still need to be integrated with the Employee
-module. Until an account is created, the sign-in page has no valid credentials.
+The SQL initialization creates only the three required roles. When the backend
+starts with `SPRING_PROFILES_ACTIVE=dev` and `DEV_DEMO_PASSWORD` set, it creates
+one reserved development department and three minimal linked Employee and
+UserAccount records. Restarting in `dev` reuses those rows, restores their
+roles and active status, and reapplies the configured password if it changed.
+No schedules, attendance, leave, assets, or other business records are created.
+Outside the `dev` profile, startup does not create demo accounts.
+
+With the example password `EvoqDemo2026!`, sign in at
+[http://localhost:5173](http://localhost:5173) using:
+
+| Role | Username | Password |
+| --- | --- | --- |
+| Manager/Admin | `demo.manager` | `EvoqDemo2026!` |
+| Supervisor | `demo.supervisor` | `EvoqDemo2026!` |
+| Employee | `demo.employee` | `EvoqDemo2026!` |
+
+The example password is public and is only for local development. Use the same
+`DEV_DEMO_PASSWORD` value across your team if you want identical credentials.
+Do not enable the `dev` profile against a production database. These accounts
+let you inspect the protected shell and empty module pages; business data
+appears only when the modules have real API integrations. The legitimate first
+Manager/Admin bootstrap and normal Employee onboarding remain separate work.
 
 Login uses a server-side Spring Security session. The browser stores only the
 HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
@@ -341,8 +365,8 @@ fetches a fresh token because Spring rotates the session's CSRF state.
 
 An authenticated user can change a temporary password from the account menu.
 Forced first-login password change is deferred because the frozen schema has
-no flag for it. Account creation remains an integration point for the Employee
-module owner; this shared auth work does not create Employee records.
+no flag for it. Normal account creation remains an integration point for the
+Employee module owner; the dev initializer is only for reserved demo access.
 
 ---
 
