@@ -1,14 +1,12 @@
-import { BadgeCheck, CalendarDays, Download, Laptop, Users } from 'lucide-react'
 import Card from '../../../components/common/Card'
+import EmptyState from '../../../components/common/EmptyState'
 import PageHeader from '../../../components/common/PageHeader'
-import { useEms } from '../../../context/EmsContext'
 
 export default function ReportsPage() {
-  const { role, currentEmployee, allowedEmployees, allowedLeave, allowedAttendance, allowedAssets }=useEms()
-  const employees=allowedEmployees(), leaves=allowedLeave(), attendance=allowedAttendance(), assets=allowedAssets()
-  const scope=role==='admin'?'organization-wide':role==='supervisor'?`${currentEmployee.team} team`:'personal'
-  const exportCsv=(name,rows)=>{if(!rows.length)return;const keys=Object.keys(rows[0]);const csv=[keys.join(','),...rows.map(row=>keys.map(k=>`"${String(row[k]??'').replaceAll('"','""')}"`).join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`evoq-${name}.csv`;a.click();URL.revokeObjectURL(url)}
-  return <><PageHeader title="Basic reports" description={`Export ${scope} employee, leave, attendance and asset summaries without exposing records outside this role.`}/><div className="grid md:grid-cols-2 gap-5"><Report title={role==='employee'?'Profile record':'Employee list'} description={role==='employee'?'Your employee record.':'Workforce roles, teams and status.'} Icon={Users} count={employees.length} onExport={()=>exportCsv('employees',employees)}/><Report title="Leave summary" description="Leave request type, dates, days and decisions." Icon={CalendarDays} count={leaves.length} onExport={()=>exportCsv('leave',leaves)}/><Report title="Attendance summary" description="Attendance status, times, working hours and notes." Icon={BadgeCheck} count={attendance.length} onExport={()=>exportCsv('attendance',attendance)}/><Report title={role==='employee'?'Assigned asset report':'Asset status report'} description="Asset assignments and current status." Icon={Laptop} count={assets.length} onExport={()=>exportCsv('assets',assets)}/></div><Card className="mt-6"><h3 className="text-base font-bold txt mb-4">Snapshot</h3><div className="grid grid-cols-2 lg:grid-cols-4 gap-3"><Snap value={employees.filter(e=>e.status==='Active').length} label="ACTIVE EMPLOYEES"/><Snap value={leaves.filter(x=>x.status==='Pending').length} label="PENDING LEAVE"/><Snap value={attendance.filter(x=>x.status==='Absent').length} label="ABSENCE RECORDS"/><Snap value={assets.filter(a=>a.status==='Assigned').length} label="ASSIGNED ASSETS"/></div></Card></>
+  return <>
+    <PageHeader title="Reports" description="Reports will use real employee, leave, attendance and asset data when those modules are connected." />
+    <Card>
+      <EmptyState icon="BarChart3" title="No report data available" description="There are no connected report sources or exports yet." />
+    </Card>
+  </>
 }
-function Report({title,description,Icon,count,onExport}) { return <Card><div className="flex items-start gap-4"><div className="w-10 h-10 rounded-2xl bg-app-subtle flex items-center justify-center shrink-0"><Icon className="w-4 h-4"/></div><div className="flex-1"><div className="text-base font-extrabold txt">{title}</div><p className="text-xs text-app-muted muted leading-5 mt-1">{description}</p><div className="flex items-center justify-between mt-5"><span className="text-xs font-bold text-app-muted muted">{count} records</span><button onClick={onExport} className="px-3 py-2 rounded-full bg-[#1A1D1F] dark-primary text-white text-[10px] font-bold flex items-center gap-2"><Download className="w-3.5 h-3.5"/>Export CSV</button></div></div></div></Card> }
-function Snap({value,label}) { return <div className="subtle bg-app-subtle rounded-2xl p-4"><div className="text-2xl font-extrabold txt">{value}</div><div className="text-[10px] font-bold text-app-muted muted mt-1">{label}</div></div> }

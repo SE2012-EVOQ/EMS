@@ -1,41 +1,12 @@
-import { ChevronRight, UserPlus } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import Card from '../../../components/common/Card'
-import FilterPills from '../../../components/common/FilterPills'
-import Modal from '../../../components/common/Modal'
+import EmptyState from '../../../components/common/EmptyState'
 import PageHeader from '../../../components/common/PageHeader'
-import StatusBadge from '../../../components/common/StatusBadge'
-import { FormField, SelectField } from '../../../components/common/FormField'
-import { useEms } from '../../../context/EmsContext'
-
-const blank = { name:'', email:'', phone:'', address:'', title:'', joined:'2026-09-28', department:'Engineering', project:'EMS Portal', team:'Platform', supervisor:'', status:'Active' }
 
 export default function EmployeesPage() {
-  const { role, currentEmployee, allowedEmployees, employeeById, db, saveEmployee, deactivateEmployee } = useEms()
-  const [filter,setFilter]=useState('All')
-  const [selected,setSelected]=useState(null)
-  const [editing,setEditing]=useState(null)
-  const [params,setParams]=useSearchParams()
-  useEffect(()=>{ if(params.get('create')==='1'&&role==='admin'){setEditing(blank);params.delete('create');setParams(params,{replace:true})}},[params,role])
-  const list=useMemo(()=>allowedEmployees().filter(e=>filter==='All'||e.team===filter||e.status===filter),[db,role,filter])
-
-  if(role==='employee') return <ProfileView employee={currentEmployee} onEdit={()=>setEditing(currentEmployee)} />
-  if(selected){const e=employeeById(selected);if(e)return <EmployeeDetail employee={e} onBack={()=>setSelected(null)} onEdit={()=>setEditing(e)} onDeactivate={()=>deactivateEmployee(e.id)} canAdmin={role==='admin'} />}
-
-  return <><PageHeader title="Employee directory" description={role==='admin'?'Maintain official employee and organization records.':'Employees under your responsibility.'} actions={role==='admin'&&<button onClick={()=>setEditing(blank)} className="bg-[#1A1D1F] dark-primary text-white rounded-full px-4 py-2.5 text-xs font-bold flex items-center gap-2"><UserPlus className="w-4 h-4"/>Add employee</button>}/><FilterPills items={['All','Management','Vision','Platform','Inactive']} value={filter} onChange={setFilter}/><Card><div className="overflow-x-auto"><table className="w-full min-w-[780px]"><thead><tr className="text-left text-[10px] uppercase tracking-wider text-app-muted muted"><th className="pb-3">Employee</th><th className="pb-3">Job title</th><th className="pb-3">Team / Project</th><th className="pb-3">Supervisor</th><th className="pb-3">Status</th><th/></tr></thead><tbody>{list.map(e=><tr key={e.id} onClick={()=>setSelected(e.id)} className="border-t border-app-border hover:bg-app-subtle/60 cursor-pointer"><td className="py-4"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-[#DEE8FF] avatar-soft flex items-center justify-center text-[10px] font-extrabold">{e.avatar}</div><div><div className="text-xs font-bold txt">{e.name}</div><div className="text-[10px] text-app-muted muted">{e.id} · {e.email}</div></div></div></td><td className="py-4 text-xs font-semibold txt">{e.title}</td><td className="py-4"><div className="text-xs font-bold txt">{e.team} · {e.project}</div><div className="text-[10px] text-app-muted muted">{e.department}</div></td><td className="py-4 text-xs text-app-muted muted">{e.supervisor?employeeById(e.supervisor)?.name:'—'}</td><td className="py-4"><StatusBadge status={e.status}/></td><td className="py-4 text-right"><ChevronRight className="w-4 h-4 ml-auto"/></td></tr>)}</tbody></table></div></Card><EmployeeModal open={!!editing} employee={editing} db={db} role={role} currentEmployee={currentEmployee} onClose={()=>setEditing(null)} onSave={value=>{saveEmployee(value);setEditing(null)}}/></>
-}
-
-function ProfileView({employee,onEdit}) { return <><PageHeader title="My profile" description="View official information and update permitted personal contact details." actions={<button onClick={onEdit} className="bg-[#1A1D1F] dark-primary text-white rounded-full px-4 py-2.5 text-xs font-bold">Edit contact details</button>}/><div className="grid xl:grid-cols-12 gap-6"><div className="xl:col-span-4"><Card><Profile employee={employee}/></Card></div><div className="xl:col-span-8"><Card><h3 className="text-base font-bold txt mb-5">Employment information</h3><Info employee={employee}/></Card></div></div></> }
-
-function EmployeeDetail({employee,onBack,onEdit,onDeactivate,canAdmin}) { return <><button onClick={onBack} className="mb-4 text-xs font-bold text-app-muted muted">← Back to employees</button><PageHeader title={employee.name} description={`${employee.id} · ${employee.title}`} actions={canAdmin&&<><button onClick={onEdit} className="surface bg-white border border-gray-200 rounded-full px-4 py-2.5 text-xs font-bold">Edit record</button><button onClick={onDeactivate} disabled={employee.status==='Inactive'} className="rounded-full px-4 py-2.5 text-xs font-bold bg-app-pink-bg text-app-pink">{employee.status==='Inactive'?'Deactivated':'Deactivate'}</button></>}/><div className="grid xl:grid-cols-12 gap-6"><div className="xl:col-span-4"><Card><Profile employee={employee}/></Card></div><div className="xl:col-span-8"><Card><h3 className="text-base font-bold txt mb-5">Employment information</h3><Info employee={employee}/></Card></div></div></> }
-function Profile({employee}) { return <div className="flex flex-col items-center text-center"><div className="w-20 h-20 rounded-full bg-[#DEE8FF] avatar-soft flex items-center justify-center text-xl font-extrabold">{employee.avatar}</div><div className="text-xl font-extrabold mt-4 txt">{employee.name}</div><div className="text-xs text-app-muted muted font-semibold mt-1">{employee.title}</div><div className="flex gap-2 mt-3"><StatusBadge status={employee.status}/><span className="px-2.5 py-1 rounded-full bg-app-subtle subtle text-[10px] font-bold">{employee.id}</span></div><div className="w-full border-t border-app-border mt-5 pt-4 text-left space-y-2 text-xs"><div>{employee.email}</div><div>{employee.phone}</div><div>{employee.address}</div></div></div> }
-function Info({employee}) { return <div className="grid sm:grid-cols-2 gap-4">{[['Department',employee.department],['Team',employee.team],['Current project',employee.project],['Joined',employee.joined],['Job title',employee.title],['Supervisor',employee.supervisor||'—']].map(([k,v])=><div key={k} className="subtle bg-app-subtle rounded-2xl p-4"><div className="text-[10px] font-bold text-app-muted muted">{k.toUpperCase()}</div><div className="text-xs font-extrabold mt-2 txt">{v}</div></div>)}</div> }
-
-function EmployeeModal({open,employee,db,role,currentEmployee,onClose,onSave}) {
-  const isOwn=employee?.id===currentEmployee.id&&role!=='admin'
-  const [form,setForm]=useState(employee||blank)
-  useEffect(()=>setForm(employee||blank),[employee])
-  const set=(key,value)=>setForm(f=>({...f,[key]:value}))
-  return <Modal open={open} onClose={onClose} title={employee?.id?'Edit employee':'Add employee'} subtitle={isOwn?'Only permitted contact details can be changed.':'Maintain the employee record.'} footer={<><button onClick={onClose} className="px-4 py-2.5 rounded-full border border-gray-200 text-xs font-bold">Cancel</button><button onClick={()=>onSave(form)} className="px-4 py-2.5 rounded-full bg-[#1A1D1F] dark-primary text-white text-xs font-bold">Save</button></>}><div className="grid sm:grid-cols-2 gap-4"><FormField label="Full name" value={form.name||''} disabled={isOwn} onChange={e=>set('name',e.target.value)}/><FormField label="Email" type="email" value={form.email||''} disabled={isOwn} onChange={e=>set('email',e.target.value)}/><FormField label="Phone" value={form.phone||''} onChange={e=>set('phone',e.target.value)}/><FormField label="Address" value={form.address||''} onChange={e=>set('address',e.target.value)}/>{!isOwn&&<><FormField label="Job title" value={form.title||''} onChange={e=>set('title',e.target.value)}/><FormField label="Joined date" type="date" value={form.joined||''} onChange={e=>set('joined',e.target.value)}/><SelectField label="Department" value={form.department||'Engineering'} onChange={e=>set('department',e.target.value)}><option>Management</option><option>Engineering</option></SelectField><SelectField label="Team" value={form.team||'Platform'} onChange={e=>set('team',e.target.value)}><option>Management</option><option>Vision</option><option>Platform</option></SelectField><FormField label="Current project" value={form.project||''} onChange={e=>set('project',e.target.value)}/><SelectField label="Supervisor" value={form.supervisor||''} onChange={e=>set('supervisor',e.target.value)}><option value="">—</option>{db.employees.filter(e=>e.status==='Active'&&e.id!==form.id).map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</SelectField></>}</div></Modal>
+  return <>
+    <PageHeader title="Employee directory" description="Employee and organization records will appear here when the module is connected." />
+    <Card>
+      <EmptyState icon="Users" title="No employee records available" description="Employee onboarding and directory data are not connected yet." />
+    </Card>
+  </>
 }
