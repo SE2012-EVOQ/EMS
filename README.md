@@ -4,6 +4,41 @@ Employee Management System developed for the EVOQ client project.
 
 The system uses a React frontend, Spring Boot REST backend, and MySQL relational database.
 
+## Start both development servers
+
+Start MySQL first. The `evoq_ems` database must already exist (see [Database Setup](#database-setup)).
+The frontend and backend are separate processes: opening the frontend does not start the API.
+
+In **terminal 1**, from the repository root (macOS/Linux):
+
+```bash
+cd backend
+source .env
+./mvnw spring-boot:run
+```
+
+`backend/.env` is a local, Git-ignored file. It must contain exported values for
+`DB_USERNAME`, `DB_PASSWORD`, `SPRING_PROFILES_ACTIVE=dev`, and
+`DEMO_PASSWORD` for the seeded demo accounts. Spring Boot does not read this
+file automatically; `source .env` loads it into the terminal before Maven
+starts. Keep this terminal open. Wait for `Started EvoqEmsBackendApplication`,
+then check [http://localhost:8080/api/health](http://localhost:8080/api/health).
+
+In **terminal 2**, from the repository root:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173). Leave this terminal open too.
+`npm install` is only needed the first time or after dependencies change. If
+the frontend opens but sign-in fails, check that the backend terminal is still
+running and the health URL responds. If `SERVER_PORT` differs from `8080`,
+set `VITE_API_BASE_URL` to the matching `http://localhost:<port>/api` in
+`frontend/.env`.
+
 ## Project Structure
 
 ```text
@@ -201,9 +236,10 @@ If required, make the Maven wrapper executable:
 chmod +x mvnw
 ```
 
-Run:
+Load the local configuration and run:
 
 ```bash
+source .env
 ./mvnw spring-boot:run
 ```
 
@@ -253,15 +289,17 @@ elsewhere.
 Example macOS/Linux:
 
 ```bash
-export DB_USERNAME=root
-export DB_PASSWORD="your-local-mysql-password"
+source .env
 ./mvnw spring-boot:run
 ```
 
-Or for a single command:
+For a new checkout, create the ignored `backend/.env` with your own values:
 
-```bash
-DB_USERNAME=root DB_PASSWORD="your-local-mysql-password" ./mvnw spring-boot:run
+```dotenv
+export DB_USERNAME="root"
+export DB_PASSWORD="your-local-mysql-password"
+export SPRING_PROFILES_ACTIVE="dev"
+export DEMO_PASSWORD="choose-a-local-demo-password"
 ```
 
 Windows PowerShell:
@@ -288,14 +326,12 @@ Hibernate is configured to validate the existing database schema rather than rep
 
 Run the finalized schema and sample-data scripts first. Their fictional
 `user_account.password_hash` values start as
-`DEMO_HASH_REPLACE_DURING_SETUP`. For local demos, start the backend with an
-explicit `dev` profile and a locally chosen password:
+`DEMO_HASH_REPLACE_DURING_SETUP`. For local demos, put an explicit `dev`
+profile and a locally chosen password in `backend/.env`, then run:
 
 ```bash
-export SPRING_PROFILES_ACTIVE=dev
-export DEMO_PASSWORD="choose-a-local-demo-password"
-export DB_USERNAME=root
-export DB_PASSWORD="your-local-mysql-password"
+cd backend
+source .env
 ./mvnw spring-boot:run
 ```
 
@@ -414,7 +450,8 @@ From `backend/`:
 macOS/Linux:
 
 ```bash
-DB_USERNAME=root DB_PASSWORD="your-password" ./mvnw spring-boot:run
+source .env
+./mvnw spring-boot:run
 ```
 
 Windows:
