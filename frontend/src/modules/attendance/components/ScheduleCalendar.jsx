@@ -1,38 +1,33 @@
 import EmptyState from '../../../components/common/EmptyState'
 import { fmtShort } from '../../../components/common/date'
 
-export default function ScheduleCalendar({ entries = [], employeeById }) {
-  if (!entries.length) return <EmptyState icon="CalendarRange" title="No schedule data available" description="Schedules are not connected yet." />
+const initials = name => (name || '?').split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()
 
-  const dates = [...new Set(entries.map(entry => entry.date))].sort()
-  const coverage = date => entries.filter(entry => entry.date === date)
+export default function ScheduleCalendar({ entries = [], showEmployees = false }) {
+  if (!entries.length) return <EmptyState icon="CalendarRange" title="No schedule entries" description="Published shifts will appear here when they are assigned." />
+
+  const dates = [...new Set(entries.map(entry => entry.workDate))].sort()
+  const shiftsFor = date => entries.filter(entry => entry.workDate === date).sort((a, b) => a.startTime.localeCompare(b.startTime))
 
   return <div className="overflow-x-auto">
-    <div className="calendar-grid">
-      <div className="calendar-cell bg-app-subtle subtle text-[10px] font-bold text-app-muted muted flex items-center">DATES</div>
+    <div className="calendar-grid" style={{ minWidth: `${Math.max(620, dates.length * 150 + 150)}px` }}>
+      <div className="calendar-cell bg-app-subtle subtle text-[10px] font-bold text-app-muted muted flex items-center">DATE</div>
       {dates.map(date => <div key={date} className="calendar-cell bg-app-subtle subtle">
-        <div className="text-xs font-extrabold txt">{new Date(date + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</div>
-        <div className="text-[10px] text-app-muted muted mt-1">{fmtShort(date)}</div>
+        <div className="text-xs font-extrabold txt">{new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short' })}</div>
+        <div className="mt-1 text-[10px] text-app-muted muted">{fmtShort(date)}</div>
       </div>)}
-      <div className="calendar-cell text-[10px] font-bold text-app-muted muted">Coverage</div>
-      {dates.map(date => {
-        const day = coverage(date)
-        return <div key={date} className="calendar-cell">
-          <div className="text-xs font-extrabold txt">{day.length} {day.length === 1 ? 'entry' : 'entries'}</div>
-          <div className="text-[10px] text-app-muted muted mt-2">{day.map(entry => <div key={entry.id}>{entry.start}–{entry.end} · {entry.mode}</div>)}</div>
-        </div>
-      })}
-      <div className="calendar-cell text-[10px] font-bold text-app-muted muted">People</div>
-      {dates.map(date => {
-        const ids = [...new Set(coverage(date).map(entry => entry.employee))]
-        return <div key={date} className="calendar-cell">
-          <div className="flex -space-x-2 mt-1">{ids.slice(0, 6).map(id => {
-            const employee = employeeById?.(id)
-            return <div key={id} title={employee?.name || String(id)} className="w-7 h-7 rounded-full bg-[#DEE8FF] avatar-soft border-2 border-white flex items-center justify-center text-[8px] font-extrabold">{employee?.avatar || '?'}</div>
-          })}</div>
-          <div className="text-[10px] text-app-muted muted mt-3">{ids.length} scheduled</div>
-        </div>
-      })}
+      <div className="calendar-cell text-[10px] font-bold text-app-muted muted">SHIFTS</div>
+      {dates.map(date => <div key={date} className="calendar-cell space-y-2">
+        {shiftsFor(date).map(entry => <div key={entry.id} className="rounded-xl bg-[#EEF3FF] px-2.5 py-2">
+          <div className="text-[11px] font-extrabold txt">{entry.startTime?.slice(0, 5)}–{entry.endTime?.slice(0, 5)}</div>
+          {showEmployees && <div className="mt-1 text-[10px] font-semibold text-app-muted">{entry.employeeName}</div>}
+          {entry.notes && <div className="mt-1 text-[10px] text-app-muted">{entry.notes}</div>}
+        </div>)}
+        <div className="text-[10px] text-app-muted">{shiftsFor(date).length} {shiftsFor(date).length === 1 ? 'shift' : 'shifts'}</div>
+      </div>)}
+      {showEmployees && <><div className="calendar-cell text-[10px] font-bold text-app-muted muted">TEAM COVERAGE</div>
+        {dates.map(date => { const people = [...new Map(shiftsFor(date).map(entry => [entry.employeeId, entry.employeeName])).entries()]; return <div key={date} className="calendar-cell"><div className="flex -space-x-2">{people.slice(0, 6).map(([id, name]) => <div key={id} title={name} className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#DEE8FF] text-[8px] font-extrabold">{initials(name)}</div>)}</div><div className="mt-3 text-[10px] text-app-muted">{people.length} scheduled</div></div> })}
+      </>}
     </div>
   </div>
 }
