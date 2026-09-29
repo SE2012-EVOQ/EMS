@@ -23,11 +23,11 @@ class PasswordServiceTests {
     @Test
     void checksCurrentPasswordAndStoresNewBcryptHash() {
         UserAccount account = mock(UserAccount.class);
-        when(accounts.findByUsername("maya.fernando")).thenReturn(Optional.of(account));
+        when(accounts.findByUsername("test.manager")).thenReturn(Optional.of(account));
         when(account.isActive()).thenReturn(true);
         when(account.getPasswordHash()).thenReturn(encoder.encode("old-password"));
 
-        passwords.changePassword("maya.fernando", new ChangePasswordRequest("old-password", "new-password"));
+        passwords.changePassword("test.manager", new ChangePasswordRequest("old-password", "new-password"));
 
         ArgumentCaptor<String> hash = ArgumentCaptor.forClass(String.class);
         verify(account).setPasswordHash(hash.capture());
@@ -38,12 +38,12 @@ class PasswordServiceTests {
     @Test
     void rejectsIncorrectCurrentPassword() {
         UserAccount account = mock(UserAccount.class);
-        when(accounts.findByUsername("maya.fernando")).thenReturn(Optional.of(account));
+        when(accounts.findByUsername("test.manager")).thenReturn(Optional.of(account));
         when(account.isActive()).thenReturn(true);
         when(account.getPasswordHash()).thenReturn(encoder.encode("old-password"));
 
         assertThrows(IllegalArgumentException.class, () -> passwords.changePassword(
-                "maya.fernando", new ChangePasswordRequest("wrong-password", "new-password")));
+                "test.manager", new ChangePasswordRequest("wrong-password", "new-password")));
         verify(account, never()).setPasswordHash(anyString());
     }
 }

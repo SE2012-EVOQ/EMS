@@ -43,15 +43,15 @@ class AuthHttpFlowTests {
 
     @Test
     void sessionLoginCurrentUserAndLogout() throws Exception {
-        AccountPrincipal active = principal(true, "maya.fernando");
-        when(users.loadUserByUsername("maya.fernando")).thenReturn(active);
+        AccountPrincipal active = principal(true, "test.manager");
+        when(users.loadUserByUsername("test.manager")).thenReturn(active);
         MvcResult csrf = mvc.perform(get("/api/auth/csrf"))
                 .andExpect(status().isOk()).andReturn();
         JsonNode token = mapper.readTree(csrf.getResponse().getContentAsString());
         MockHttpSession session = (MockHttpSession) csrf.getRequest().getSession(false);
 
         MvcResult login = mvc.perform(withCsrf(post("/api/auth/login")
-                .session(session).param("username", "maya.fernando").param("password", "correct-password"), token))
+                .session(session).param("username", "test.manager").param("password", "correct-password"), token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(1))
                 .andExpect(jsonPath("$.employeeId").value(1))
@@ -62,7 +62,7 @@ class AuthHttpFlowTests {
 
         mvc.perform(get("/api/auth/me").session(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("maya.fernando"));
+                .andExpect(jsonPath("$.username").value("test.manager"));
 
         MvcResult freshCsrf = mvc.perform(get("/api/auth/csrf").session(session))
                 .andExpect(status().isOk()).andReturn();
@@ -71,7 +71,7 @@ class AuthHttpFlowTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"currentPassword\":\"correct-password\",\"newPassword\":\"new-password\"}"), logoutToken))
                 .andExpect(status().isNoContent());
-        verify(passwords).changePassword(eq("maya.fernando"), argThat(request ->
+        verify(passwords).changePassword(eq("test.manager"), argThat(request ->
                 request.currentPassword().equals("correct-password")
                         && request.newPassword().equals("new-password")));
 
@@ -96,13 +96,13 @@ class AuthHttpFlowTests {
 
     @Test
     void badUnknownAndInactiveAccountsCannotLogin() throws Exception {
-        AccountPrincipal active = principal(true, "maya.fernando");
+        AccountPrincipal active = principal(true, "test.manager");
         AccountPrincipal inactive = principal(false, "inactive");
-        when(users.loadUserByUsername("maya.fernando")).thenReturn(active);
+        when(users.loadUserByUsername("test.manager")).thenReturn(active);
         when(users.loadUserByUsername("unknown")).thenThrow(new UsernameNotFoundException("unknown"));
         when(users.loadUserByUsername("inactive")).thenReturn(inactive);
 
-        failedLogin("maya.fernando", "wrong-password");
+        failedLogin("test.manager", "wrong-password");
         failedLogin("unknown", "correct-password");
         failedLogin("inactive", "correct-password");
     }

@@ -1,44 +1,21 @@
-import { useNavigate } from 'react-router-dom'
 import Card from '../../../components/common/Card'
+import EmptyState from '../../../components/common/EmptyState'
 import MetricCard from '../../../components/common/MetricCard'
-import StatusBadge from '../../../components/common/StatusBadge'
-import { DEMO_TODAY } from '../../../data/mock/mockDatabase'
-import { useEms } from '../../../context/EmsContext'
+
+const metrics = [
+  ['Active employees', 'Users'],
+  ['Pending leave', 'CalendarClock'],
+  ['Present today', 'BadgeCheck'],
+  ['Assigned assets', 'Laptop']
+]
 
 export default function DashboardPage() {
-  const ems = useEms()
-  if (ems.role === 'employee') return <EmployeeDashboard {...ems} />
-  if (ems.role === 'supervisor') return <SupervisorDashboard {...ems} />
-  return <AdminDashboard {...ems} />
+  return <>
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      {metrics.map(([label, icon]) => <MetricCard key={label} label={label} value="—" icon={icon} />)}
+    </div>
+    <Card>
+      <EmptyState icon="LayoutDashboard" title="No dashboard data available" description="Business module data is not connected yet. Metrics will appear when the modules are implemented." />
+    </Card>
+  </>
 }
-
-function AdminDashboard({ db, employeeById, currentAssetAssignment }) {
-  const navigate = useNavigate()
-  const active = db.employees.filter(e=>e.status==='Active').length
-  const pending = db.leaveRequests.filter(x=>x.status==='Pending').length
-  const presentToday = db.attendance.filter(x=>x.date===DEMO_TODAY && x.status!=='Absent').length
-  const assigned = db.assetAssignments.filter(a=>!a.returnedDate && a.status==='Active').length
-  return <><div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6"><MetricCard label="Active employees" value={active} icon="Users" delta="+2 this year"/><MetricCard label="Pending leave" value={pending} icon="CalendarClock" delta={pending ? `${pending} waiting` : null} positive={false}/><MetricCard label="Present today" value={presentToday} icon="BadgeCheck" delta="89%"/><MetricCard label="Assigned assets" value={assigned} icon="Laptop" delta={`${db.assets.length} total`}/></div><div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start"><div className="xl:col-span-8 space-y-6"><Card><div className="flex items-center justify-between mb-5"><div><h2 className="text-base font-bold txt">Attendance overview</h2><p className="text-xs text-app-muted muted mt-1">Recent attendance through 28 September</p></div><button onClick={()=>navigate('/attendance')} className="text-xs font-bold px-3 py-2 border border-gray-200 rounded-full">View records</button></div><AttendanceBars db={db}/></Card><Card><div className="flex items-center justify-between mb-5"><div><h2 className="text-base font-bold txt">Recent leave requests</h2><p className="text-xs text-app-muted muted mt-1">Latest company requests and statuses</p></div><button onClick={()=>navigate('/leave')} className="text-xs font-bold px-3 py-2 border border-gray-200 rounded-full">All leave</button></div><div className="space-y-2">{db.leaveRequests.slice(0,4).map(r=><div key={r.id} className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-app-subtle subtle"><div><div className="text-xs font-bold txt">{employeeById(r.employee)?.name} · {r.type}</div><div className="text-[10px] text-app-muted muted mt-1">{r.from} → {r.to} · {r.days} day{r.days>1?'s':''}</div></div><StatusBadge status={r.status}/></div>)}</div></Card></div><div className="xl:col-span-4 space-y-6"><Card><div className="flex items-center justify-between mb-5"><h2 className="text-base font-bold txt">Organization</h2><button onClick={()=>navigate('/employees')} className="text-[10px] font-bold text-app-muted muted">Manage</button></div><div className="space-y-4">{['Management','Vision','Platform'].map(team=>{const n=db.employees.filter(e=>e.team===team&&e.status==='Active').length;return <div key={team}><div className="flex items-center justify-between text-xs font-bold"><span>{team}</span><span>{n}</span></div><div className="h-2 bg-app-subtle subtle rounded-full mt-2 overflow-hidden"><div className="h-full bg-[#1A1D1F] dark-primary rounded-full" style={{width:`${Math.min(100,n/active*100)}%`}}/></div></div>})}</div></Card><Card><div className="flex items-center justify-between mb-5"><h2 className="text-base font-bold txt">Asset status</h2><button onClick={()=>navigate('/assets')} className="text-[10px] font-bold text-app-muted muted">Inventory</button></div><div className="grid grid-cols-2 gap-3">{['Assigned','Available','Maintenance','Damaged'].map(s=><div key={s} className="subtle bg-app-subtle rounded-2xl p-4"><div className="text-2xl font-extrabold txt">{db.assets.filter(a=>a.status===s).length}</div><div className="text-[10px] font-bold text-app-muted muted mt-1">{s}</div></div>)}</div></Card></div></div></>
-}
-
-function SupervisorDashboard({ db, currentEmployee, directReports, entriesForTeam }) {
-  const navigate = useNavigate()
-  const team = directReports()
-  const ids = team.map(e=>e.id)
-  const pending = db.leaveRequests.filter(x=>ids.includes(x.employee)&&x.status==='Pending')
-  const attendance = db.attendance.filter(x=>x.date===DEMO_TODAY&&ids.includes(x.employee))
-  return <><div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6"><MetricCard label="Team members" value={team.length} icon="Users"/><MetricCard label="Pending approvals" value={pending.length} icon="CalendarClock" delta={pending.length?'Action needed':null} positive={false}/><MetricCard label="Present today" value={attendance.filter(x=>x.status!=='Absent').length} icon="BadgeCheck"/><MetricCard label="Scheduled today" value={entriesForTeam(currentEmployee.team).filter(x=>x.date===DEMO_TODAY).length} icon="CalendarRange"/></div><div className="grid xl:grid-cols-2 gap-6"><Card><div className="flex justify-between mb-5"><h2 className="text-base font-bold txt">Pending leave requests</h2><button onClick={()=>navigate('/leave')} className="text-xs font-bold text-app-muted muted">Open queue</button></div>{pending.length?pending.map(x=><div key={x.id} className="p-3 rounded-2xl bg-app-subtle subtle mb-2 text-xs font-bold">{db.employees.find(e=>e.id===x.employee)?.name} · {x.type} · {x.days} days</div>):<p className="text-xs text-app-muted muted">No requests are waiting for a decision.</p>}</Card><Card><div className="flex justify-between mb-5"><h2 className="text-base font-bold txt">Team</h2><button onClick={()=>navigate('/employees')} className="text-xs font-bold text-app-muted muted">Directory</button></div>{team.map(e=><div key={e.id} className="flex items-center gap-3 py-2"><div className="w-10 h-10 rounded-full bg-[#DEE8FF] avatar-soft flex items-center justify-center text-[10px] font-extrabold">{e.avatar}</div><div><div className="text-xs font-bold txt">{e.name}</div><div className="text-[10px] text-app-muted muted">{e.title}</div></div></div>)}</Card></div></>
-}
-
-function EmployeeDashboard({ db, currentEmployee, assetAssignmentsForEmployee }) {
-  const navigate = useNavigate()
-  const balance = db.leaveBalances[currentEmployee.id]
-  const today = db.attendance.find(x=>x.employee===currentEmployee.id&&x.date===DEMO_TODAY)
-  const schedule = db.scheduleEntries.find(x=>x.employee===currentEmployee.id&&x.date===DEMO_TODAY)
-  const assetCount = assetAssignmentsForEmployee(currentEmployee.id).length
-  return <><div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6"><MetricCard label="Annual leave" value={`${balance.Annual} days`} icon="Palmtree"/><MetricCard label="Medical leave" value={`${balance.Medical} days`} icon="HeartPulse"/><MetricCard label="Casual leave" value={`${balance.Casual} days`} icon="Coffee"/><MetricCard label="Assigned assets" value={assetCount} icon="Laptop"/></div><div className="grid xl:grid-cols-12 gap-6"><div className="xl:col-span-8"><Card><div className="flex justify-between mb-5"><div><h2 className="text-base font-bold txt">Today</h2><p className="text-xs text-app-muted muted mt-1">Monday, 28 September 2026</p></div>{today&&<StatusBadge status={today.status}/>}</div><div className="grid sm:grid-cols-3 gap-3"><Mini label="SCHEDULE" value={schedule?`${schedule.start} – ${schedule.end}`:'No schedule'} note={schedule?.mode}/><Mini label="CHECK IN" value={today?.checkIn||'—'} note={today?`${today.hours} h recorded`:'No record'}/><Mini label="NOTE" value={schedule?.note||'Normal working day'}/></div></Card></div><div className="xl:col-span-4"><Card><h2 className="text-base font-bold txt mb-4">My profile</h2><div className="text-center"><div className="w-20 h-20 mx-auto rounded-full bg-[#DEE8FF] avatar-soft flex items-center justify-center text-xl font-extrabold">{currentEmployee.avatar}</div><div className="text-xl font-extrabold mt-4 txt">{currentEmployee.name}</div><div className="text-xs text-app-muted muted mt-1">{currentEmployee.title}</div><button onClick={()=>navigate('/employees')} className="w-full mt-5 border border-gray-200 rounded-2xl py-3 text-xs font-bold">View profile</button></div></Card></div></div></>
-}
-
-function Mini({label,value,note}) { return <div className="subtle bg-app-subtle rounded-2xl p-4"><div className="text-[10px] font-bold text-app-muted muted">{label}</div><div className="text-lg font-extrabold mt-2 txt">{value}</div>{note&&<div className="text-xs text-app-muted muted mt-1">{note}</div>}</div> }
-
-function AttendanceBars({db}) { const dates=['2026-09-21','2026-09-22','2026-09-23','2026-09-24','2026-09-25',DEMO_TODAY]; return <div className="h-56 flex items-end gap-3 sm:gap-5 px-1">{dates.map(d=>{const all=db.attendance.filter(x=>x.date===d);const present=all.filter(x=>x.status!=='Absent').length;const pct=all.length?Math.round(present/all.length*100):0;return <div key={d} className="flex-1 h-full flex flex-col justify-end items-center gap-2"><div className="text-[10px] font-bold text-app-muted muted">{pct}%</div><div className="w-full max-w-12 bg-app-subtle subtle rounded-2xl h-[75%] flex items-end overflow-hidden"><div className="w-full bg-gradient-to-t from-[#58C88E] to-[#8BE0B5] rounded-2xl" style={{height:`${pct}%`}}/></div><span className="text-[10px] font-semibold text-app-muted muted">{new Date(`${d}T00:00`).toLocaleDateString('en-GB',{weekday:'short'})}</span></div>})}</div> }

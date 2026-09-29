@@ -47,7 +47,6 @@ EMS/
 │   │   ├── app/              Routing
 │   │   ├── components/       Shared UI components
 │   │   ├── context/          Shared React context
-│   │   ├── data/mock/        Temporary prototype/mock data
 │   │   ├── modules/
 │   │   │   ├── employees/    Employee & Organization Management
 │   │   │   ├── leave/        Leave Management
@@ -327,16 +326,11 @@ Hibernate is configured to validate the existing database schema rather than rep
 
 ## Authentication on a fresh database
 
-There are no pre-created employees or login accounts. The previous demo
-usernames and `DEMO_PASSWORD` cannot be used after a fresh database setup.
+There are no pre-created employees or login accounts. Previous demo usernames
+cannot be used after a fresh database setup.
 The three role rows are available for future accounts, but Employee onboarding
 and linked account provisioning still need to be integrated with the Employee
 module. Until an account is created, the sign-in page has no valid credentials.
-
-The development-only placeholder password initializer remains in the auth
-foundation for older local databases. It only updates accounts whose stored
-hash is exactly `DEMO_HASH_REPLACE_DURING_SETUP`; the current seed SQL creates
-none, so it does nothing on a fresh database.
 
 Login uses a server-side Spring Security session. The browser stores only the
 HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
@@ -565,13 +559,8 @@ Shared API functionality belongs under:
 src/services/
 ```
 
-Temporary prototype data belongs under:
-
-```text
-src/data/mock/
-```
-
-Mock data should gradually be removed as real backend endpoints are connected.
+Business module pages currently show empty states. They do not create, edit,
+or display business records until their real API integrations are implemented.
 
 ---
 
@@ -667,15 +656,15 @@ Database validation scripts
 Still under development:
 
 ```text
-End-to-end authentication smoke testing with local MySQL credentials
+First Manager/Admin account bootstrap and Employee account provisioning
 Module-specific role authorization
 Employee API integration
 Leave API integration
 Attendance & Scheduling API integration
 Asset API integration
-Removal of remaining frontend mock data
 Testing
 Deployment
 ```
 
-The current frontend is based on the approved UI prototype. Some displayed data is still temporary mock data and will be replaced by REST API responses from Spring Boot as module implementation progresses.
+The frontend keeps the shared layout and module routes, but it does not invent
+business records or dashboard metrics. Business pages await their real APIs.
