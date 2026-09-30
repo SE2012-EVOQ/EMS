@@ -197,22 +197,22 @@ export default function LeavePage() {
         description="Leave balances, requests and decisions."
       />
 
-      {error && (
-        <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      <div className="space-y-5">
+        {error && (
+          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
-      {message && (
-        <div className="mb-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
-          {message}
-        </div>
-      )}
+        {message && (
+          <div className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
+            {message}
+          </div>
+        )}
 
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        {overview.balances.map(balance => (
-          <Card key={balance.id}>
-            <div className="p-5">
+        <div className="grid gap-4 md:grid-cols-3">
+          {overview.balances.map(balance => (
+            <Card key={balance.id}>
               <div className="text-sm text-gray-500">
                 {balance.leaveType}
               </div>
@@ -225,18 +225,16 @@ export default function LeavePage() {
               <div className="mt-3 text-sm text-gray-500">
                 Used: {balance.usedDays}
               </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
 
-      {user?.role === 'EMPLOYEE' && (
-        <Card>
-          <div className="p-6">
+        {user?.role === 'EMPLOYEE' && (
+          <Card>
             <h2 className="text-lg font-semibold mb-1">
               Submit leave request
             </h2>
-            <p className="text-sm text-gray-500 mb-5">
+            <p className="text-sm text-gray-500 mt-1 mb-4">
               Request leave for approval by your supervisor.
             </p>
 
@@ -321,12 +319,10 @@ export default function LeavePage() {
                 </button>
               </div>
             </form>
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      <Card>
-        <div className="p-6">
+        <Card>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold">
@@ -334,7 +330,7 @@ export default function LeavePage() {
                   ? 'My leave history'
                   : 'Leave requests'}
               </h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 mt-1">
                 Request dates, type and current decision status.
               </p>
             </div>
@@ -388,16 +384,14 @@ export default function LeavePage() {
               </table>
             </div>
           )}
-        </div>
-      </Card>
+        </Card>
 
-      {user?.role === 'SUPERVISOR' && (
-        <Card>
-          <div className="p-6 mt-6">
-            <h2 className="text-lg font-semibold">
+        {user?.role === 'SUPERVISOR' && (
+          <Card>
+            <h2 className="text-lg font-semibold mb-1">
               Pending team leave requests
             </h2>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 mt-1 mb-4">
               Review and decide requests from your direct reports.
             </p>
 
@@ -446,14 +440,12 @@ export default function LeavePage() {
                 ))}
               </div>
             )}
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
 
-      {user?.role === 'MANAGER_ADMIN' && (
-        <Card>
-          <div className="p-6 mt-6">
-            <h2 className="text-lg font-semibold">
+        {user?.role === 'MANAGER_ADMIN' && (
+          <Card>
+            <h2 className="text-lg font-semibold mb-4">
               All leave requests
             </h2>
 
@@ -499,9 +491,9 @@ export default function LeavePage() {
                 </table>
               </div>
             )}
-          </div>
-        </Card>
-      )}
+          </Card>
+        )}
+      </div>
     </>
   )
 }
