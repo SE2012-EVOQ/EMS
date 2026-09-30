@@ -157,14 +157,14 @@ export default function EmployeesPage() {
       <PageHeader
         title="Employee Directory"
         description="Comprehensive management of organization personnel, departments, teams, and hierarchical reporting."
-        action={
+        actions={
           isManager && (
             <button
               onClick={() => setCreateModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-sm"
             >
               <UserPlus className="w-4 h-4" />
-              Onboard Employee
+              Create Employee
             </button>
           )
         }
@@ -285,6 +285,7 @@ export default function EmployeesPage() {
 
       {/* Modals */}
       <CreateEmployeeModal
+        key={createModalOpen ? 'create-open' : 'create-closed'}
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSubmit={handleCreateEmployee}
