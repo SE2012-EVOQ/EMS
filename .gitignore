@@ -22,8 +22,5 @@ backend/.env.*
 # Logs
 *.log
 
-# Local planning handoff
-/handoff.md
-
 # Database backups
 database/backup_*.sql
