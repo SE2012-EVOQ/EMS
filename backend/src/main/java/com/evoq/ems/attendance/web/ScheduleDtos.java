@@ -16,7 +16,12 @@ public final class ScheduleDtos {
             @NotNull LocalTime startTime, @NotNull LocalTime endTime, @Size(max = 255) String notes) { }
 
     public record WriteRequest(@NotNull Long teamId, @NotNull LocalDate periodStart,
-            @NotNull LocalDate periodEnd, @NotNull List<@NotNull @Valid EntryRequest> entries) { }
+            @NotNull LocalDate periodEnd, @NotNull List<@NotNull @Valid EntryRequest> entries,
+            List<@NotNull Long> removedEntryIds) {
+        public WriteRequest(Long teamId, LocalDate periodStart, LocalDate periodEnd, List<EntryRequest> entries) {
+            this(teamId, periodStart, periodEnd, entries, List.of());
+        }
+    }
 
     public record EntryResponse(Long id, Long employeeId, String employeeName, LocalDate workDate,
             LocalTime startTime, LocalTime endTime, String notes) { }

@@ -20,6 +20,7 @@ import java.util.Optional;
 import com.evoq.ems.attendance.domain.AttendanceRecord;
 import com.evoq.ems.attendance.domain.ScheduleEntry;
 import com.evoq.ems.attendance.integration.EmployeeTeamReader;
+import com.evoq.ems.attendance.integration.ApprovedLeaveReader;
 import com.evoq.ems.attendance.integration.EmployeeTeamReader.EmployeeInfo;
 import com.evoq.ems.attendance.repository.AttendanceRecordRepository;
 import com.evoq.ems.attendance.repository.ScheduleEntryRepository;
@@ -37,6 +38,7 @@ class AttendanceServiceTests {
     private final AttendanceRecordRepository records = mock(AttendanceRecordRepository.class);
     private final ScheduleEntryRepository entries = mock(ScheduleEntryRepository.class);
     private final EmployeeTeamReader people = mock(EmployeeTeamReader.class);
+    private final ApprovedLeaveReader leaves = mock(ApprovedLeaveReader.class);
     private Clock clock;
     private AttendanceService service;
     private final LocalDate date = LocalDate.of(2026, 9, 29);
@@ -45,7 +47,7 @@ class AttendanceServiceTests {
     @BeforeEach
     void setup() {
         clock = Clock.fixed(Instant.parse("2026-09-29T09:00:00Z"), ZoneId.of("UTC"));
-        service = new AttendanceService(records, entries, people, clock);
+        service = new AttendanceService(records, entries, people, leaves, clock);
         when(employee.getEmployeeId()).thenReturn(3L);
         when(employee.getRole()).thenReturn("EMPLOYEE");
         when(people.employee(3L)).thenReturn(Optional.of(new EmployeeInfo(3L, "Demo Employee", 7L, 2L, "ACTIVE")));
@@ -67,16 +69,41 @@ class AttendanceServiceTests {
     }
 
     @Test
+    void approvedLeavePreventsCheckInEvenIfPublishedShiftStillExists() {
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
+        when(leaves.approvedConflicts(3L, date, date))
+                .thenReturn(List.of(new ApprovedLeaveReader.LeaveConflict(date, date)));
+
+        assertEquals("ON_LEAVE", service.today(employee).checkInState());
+        assertEquals(HttpStatus.CONFLICT,
+                assertThrows(AttendanceModuleException.class, () -> service.checkIn(employee)).status());
+        verify(records, never()).save(any());
+    }
+
+    @Test
+    void todayReportsAutomaticallyRecordedAbsence() {
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
+        when(records.findByEmployeeIdAndAttendanceDate(3L, date)).thenReturn(Optional.of(
+                new AttendanceRecord(3L, date, AttendanceRecord.Status.ABSENT,
+                        null, null, new BigDecimal("0.00"), "Automatically marked absent")));
+
+        var today = service.today(employee);
+
+        assertEquals("ABSENT", today.checkInState());
+        assertEquals(false, today.canCheckIn());
+    }
+
+    @Test
     void checkInAllowsExactThirtyMinuteBoundaryAndRejectsOneSecondLater() {
         clock = Clock.fixed(Instant.parse("2026-09-29T09:30:00Z"), ZoneId.of("UTC"));
-        service = new AttendanceService(records, entries, people, clock);
+        service = new AttendanceService(records, entries, people, leaves, clock);
         when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
         when(records.existsByEmployeeIdAndAttendanceDate(3L, date)).thenReturn(false);
         when(records.save(any(AttendanceRecord.class))).thenAnswer(call -> call.getArgument(0));
         assertEquals(LocalTime.of(9, 30), service.checkIn(employee).checkIn());
 
         clock = Clock.fixed(Instant.parse("2026-09-29T09:30:01Z"), ZoneId.of("UTC"));
-        service = new AttendanceService(records, entries, people, clock);
+        service = new AttendanceService(records, entries, people, leaves, clock);
         assertEquals(HttpStatus.CONFLICT, assertThrows(AttendanceModuleException.class,
                 () -> service.checkIn(employee)).status());
     }
@@ -85,11 +112,11 @@ class AttendanceServiceTests {
     void checkInRejectsBeforeShiftAndAfterWindowAndDuplicate() {
         when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
         clock = Clock.fixed(Instant.parse("2026-09-29T08:59:59Z"), ZoneId.of("UTC"));
-        service = new AttendanceService(records, entries, people, clock);
+        service = new AttendanceService(records, entries, people, leaves, clock);
         assertThrows(AttendanceModuleException.class, () -> service.checkIn(employee));
 
         clock = Clock.fixed(Instant.parse("2026-09-29T09:01:00Z"), ZoneId.of("UTC"));
-        service = new AttendanceService(records, entries, people, clock);
+        service = new AttendanceService(records, entries, people, leaves, clock);
         when(records.existsByEmployeeIdAndAttendanceDate(3L, date)).thenReturn(true);
         assertThrows(AttendanceModuleException.class, () -> service.checkIn(employee));
     }
@@ -101,12 +128,25 @@ class AttendanceServiceTests {
         when(records.findByEmployeeIdAndAttendanceDateAndCheckOutTimeIsNull(3L, date)).thenReturn(List.of(open));
         when(records.save(open)).thenReturn(open);
         clock = Clock.fixed(Instant.parse("2026-09-29T17:13:00Z"), ZoneId.of("UTC"));
-        service = new AttendanceService(records, entries, people, clock);
+        service = new AttendanceService(records, entries, people, leaves, clock);
 
         var response = service.checkOut(employee);
 
         assertEquals(LocalTime.of(17, 13), response.checkOut());
         assertEquals(new BigDecimal("8.10"), response.hours());
+    }
+
+    @Test
+    void deactivatedEmployeeCanCloseAnExistingCheckIn() {
+        AttendanceRecord open = new AttendanceRecord(3L, date, AttendanceRecord.Status.PRESENT,
+                LocalTime.of(9, 0), null, BigDecimal.ZERO, null);
+        when(records.findByEmployeeIdAndAttendanceDateAndCheckOutTimeIsNull(3L, date)).thenReturn(List.of(open));
+        when(records.save(open)).thenReturn(open);
+        when(people.employee(3L)).thenReturn(Optional.of(new EmployeeInfo(3L, "Demo Employee", 7L, 2L, "INACTIVE")));
+        clock = Clock.fixed(Instant.parse("2026-09-29T17:00:00Z"), ZoneId.of("UTC"));
+        service = new AttendanceService(records, entries, people, leaves, clock);
+
+        assertEquals(LocalTime.of(17, 0), service.checkOut(employee).checkOut());
     }
 
     @Test
@@ -144,6 +184,19 @@ class AttendanceServiceTests {
         when(records.existsByEmployeeIdAndAttendanceDate(3L, date)).thenReturn(true);
         assertThrows(AttendanceModuleException.class, () -> service.createException(manager,
                 new ExceptionRequest(3L, date, AttendanceRecord.Status.ABSENT, null, null, null)));
+    }
+
+    @Test
+    void managerCanRecordHistoricalExceptionForInactiveEmployee() {
+        AccountPrincipal manager = mock(AccountPrincipal.class);
+        when(manager.getRole()).thenReturn("MANAGER_ADMIN");
+        when(people.employee(3L)).thenReturn(Optional.of(new EmployeeInfo(3L, "Former employee", 7L, 2L, "INACTIVE")));
+        when(records.save(any(AttendanceRecord.class))).thenAnswer(call -> call.getArgument(0));
+
+        var created = service.createException(manager,
+                new ExceptionRequest(3L, date, AttendanceRecord.Status.ABSENT, null, null, "Historical correction"));
+
+        assertEquals("Former employee", created.employeeName());
     }
 
     @Test

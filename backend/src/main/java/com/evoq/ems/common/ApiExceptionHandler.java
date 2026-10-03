@@ -13,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -35,6 +36,14 @@ public class ApiExceptionHandler {
         String message = exception instanceof IllegalArgumentException
                 ? exception.getMessage() : "Request body is invalid";
         return ResponseEntity.badRequest().body(ApiError.of(HttpStatus.BAD_REQUEST, message, request.getRequestURI()));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> responseStatus(ResponseStatusException exception, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
+        return ResponseEntity.status(status).body(ApiError.of(status,
+                exception.getReason() == null ? status.getReasonPhrase() : exception.getReason(),
+                request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)

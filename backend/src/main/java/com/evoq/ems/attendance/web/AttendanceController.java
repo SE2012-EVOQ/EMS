@@ -69,7 +69,7 @@ public class AttendanceController {
     @GetMapping("/employees")
     @PreAuthorize("hasRole('MANAGER_ADMIN')")
     public List<EmployeeOption> employees(@AuthenticationPrincipal AccountPrincipal principal) {
-        return attendance.activeEmployees(principal);
+        return attendance.employeeOptions(principal);
     }
 
     @GetMapping
