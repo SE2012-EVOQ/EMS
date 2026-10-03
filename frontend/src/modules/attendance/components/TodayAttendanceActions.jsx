@@ -5,7 +5,8 @@ import { attendanceService } from '../services/attendanceService'
 const stateLabel = {
   NO_SCHEDULE: 'No published shift today', NOT_OPEN: 'Check-in opens at the scheduled start',
   AVAILABLE: 'Check-in is available', WINDOW_CLOSED: 'Check-in window closed',
-  CHECKED_IN: 'Checked in', COMPLETED: 'Shift attendance completed', ALREADY_RECORDED: 'Attendance already recorded'
+  CHECKED_IN: 'Checked in', COMPLETED: 'Shift attendance completed', ALREADY_RECORDED: 'Attendance already recorded',
+  ON_LEAVE: 'Approved leave today', ABSENT: 'Marked absent after scheduled shift'
 }
 
 export default function TodayAttendanceActions() {
@@ -17,7 +18,13 @@ export default function TodayAttendanceActions() {
     setError('')
     try { setToday(await attendanceService.today()) } catch (err) { setError(err.message) } finally { setLoading(false) }
   }
-  useEffect(() => { refresh() }, [])
+  useEffect(() => {
+    refresh()
+    const timer = window.setInterval(() => { if (!document.hidden) refresh() }, 30000)
+    const onVisible = () => { if (!document.hidden) refresh() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', onVisible) }
+  }, [])
   const act = async (action, operation) => {
     setWorking(action); setError('')
     try { await operation(); await refresh() } catch (err) { setError(err.message) } finally { setWorking(null) }

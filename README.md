@@ -226,6 +226,16 @@ The SQL files in `database/` are the source of truth for the physical relational
 
 ---
 
+## Scheduling and Attendance Rules
+
+- Supervisors manage shifts for their active direct reports; Manager/Admin can manage any team, including a supervisor's own shift. Both roles can switch between team schedules and their own published shifts. Saving a published schedule makes its changes visible immediately. Removing an entry from an existing schedule must be explicit; leaving it out of an update preserves it.
+- Draft shifts do not reserve employee time. Publishing checks approved leave and limits each employee to one published shift per day. Draft schedules can be discarded.
+- Employees check in from the scheduled start through the next 30 minutes, provided the shift has not ended. Self check-in records `PRESENT`; Manager/Admin can correct a record to `LATE`.
+- A background job checks published shifts from the past 366 days every minute. It closes an open check-in at the scheduled end time, or records `ABSENT` when no check-in exists. Approved leave does not become an automatic absence.
+- Approving leave removes future published shifts within the approved dates. Shift entries with attendance already recorded cannot be removed by this action.
+
+---
+
 # Backend Setup
 
 Move into the backend:

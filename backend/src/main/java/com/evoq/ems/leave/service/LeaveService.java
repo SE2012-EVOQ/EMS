@@ -1,6 +1,8 @@
 package com.evoq.ems.leave.service;
 
 import com.evoq.ems.auth.AccountPrincipal;
+import com.evoq.ems.attendance.service.ApprovedLeaveScheduleCoordinator;
+import com.evoq.ems.attendance.integration.EmployeeTeamReader;
 import com.evoq.ems.employee.domain.Employee;
 import com.evoq.ems.employee.domain.EmployeeStatus;
 import com.evoq.ems.employee.repository.EmployeeRepository;
@@ -29,17 +31,23 @@ public class LeaveService {
     private final LeaveTypeRepository leaveTypeRepository;
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final LeaveRequestRepository leaveRequestRepository;
+    private final ApprovedLeaveScheduleCoordinator schedules;
+    private final EmployeeTeamReader people;
 
     public LeaveService(
             EmployeeRepository employeeRepository,
             LeaveTypeRepository leaveTypeRepository,
             LeaveBalanceRepository leaveBalanceRepository,
-            LeaveRequestRepository leaveRequestRepository
+            LeaveRequestRepository leaveRequestRepository,
+            ApprovedLeaveScheduleCoordinator schedules,
+            EmployeeTeamReader people
     ) {
         this.employeeRepository = employeeRepository;
         this.leaveTypeRepository = leaveTypeRepository;
         this.leaveBalanceRepository = leaveBalanceRepository;
         this.leaveRequestRepository = leaveRequestRepository;
+        this.schedules = schedules;
+        this.people = people;
     }
 
     public LeaveOverviewResponse getMyLeave(Long employeeId) {
@@ -73,6 +81,8 @@ public class LeaveService {
 
     @Transactional
     public RequestResponse submit(Long employeeId, SubmitLeaveRequest request) {
+
+        people.lockEmployee(employeeId);
 
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> notFound("Employee not found"));
@@ -150,7 +160,7 @@ public class LeaveService {
             AccountPrincipal principal,
             boolean approve
     ) {
-        LeaveRequest request = leaveRequestRepository.findById(requestId)
+        LeaveRequest request = leaveRequestRepository.findLockedById(requestId)
                 .orElseThrow(() -> notFound("Leave request not found"));
 
         if (!"PENDING".equals(request.getStatus())) {
@@ -165,13 +175,16 @@ public class LeaveService {
         }
 
         if (approve) {
+            if (!schedules.removeFutureShifts(requester.getId(), request.getStartDate(), request.getEndDate())) {
+                throw conflict("An attendance record exists for a future shift in this leave period");
+            }
             long days = calculateDays(
                     request.getStartDate(),
                     request.getEndDate()
             );
 
             LeaveBalance balance = leaveBalanceRepository
-                    .findByEmployeeIdAndLeaveTypeId(
+                    .findLockedForEmployeeType(
                             requester.getId(),
                             request.getLeaveType().getId()
                     )

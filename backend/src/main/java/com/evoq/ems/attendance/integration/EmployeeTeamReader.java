@@ -32,6 +32,11 @@ public class EmployeeTeamReader {
         return rows.stream().findFirst();
     }
 
+    public List<TeamInfo> allTeams() {
+        return jdbc.query("SELECT team_id, name FROM team_project ORDER BY name, team_id",
+                (rs, row) -> new TeamInfo(rs.getLong("team_id"), rs.getString("name")));
+    }
+
     public List<Long> activeDirectReportIds(Long supervisorId, Long teamId) {
         return jdbc.queryForList("""
                 SELECT employee_id FROM employee
@@ -57,6 +62,16 @@ public class EmployeeTeamReader {
                 SELECT employee_id, CONCAT(first_name, ' ', last_name) AS full_name,
                        team_id, supervisor_id, status
                 FROM employee WHERE status = 'ACTIVE' ORDER BY last_name, first_name, employee_id
+                """, (rs, row) -> new EmployeeInfo(rs.getLong("employee_id"),
+                rs.getString("full_name"), rs.getObject("team_id", Long.class),
+                rs.getObject("supervisor_id", Long.class), rs.getString("status")));
+    }
+
+    public List<EmployeeInfo> allEmployees() {
+        return jdbc.query("""
+                SELECT employee_id, CONCAT(first_name, ' ', last_name) AS full_name,
+                       team_id, supervisor_id, status
+                FROM employee ORDER BY last_name, first_name, employee_id
                 """, (rs, row) -> new EmployeeInfo(rs.getLong("employee_id"),
                 rs.getString("full_name"), rs.getObject("team_id", Long.class),
                 rs.getObject("supervisor_id", Long.class), rs.getString("status")));

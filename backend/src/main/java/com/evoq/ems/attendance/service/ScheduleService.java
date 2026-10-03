@@ -58,6 +58,8 @@ public class ScheduleService {
 
     @Transactional(readOnly = true)
     public List<TeamResponse> managedTeams(AccountPrincipal principal) {
+        if (manager(principal)) return people.allTeams().stream()
+                .map(team -> new TeamResponse(team.id(), team.name())).toList();
         Long teamId = authorizedTeam(principal, principal.getEmployeeId());
         return people.team(teamId).map(team -> List.of(new TeamResponse(team.id(), team.name()))).orElseGet(List::of);
     }
@@ -65,6 +67,9 @@ public class ScheduleService {
     @Transactional(readOnly = true)
     public List<EmployeeOption> teamEmployees(AccountPrincipal principal, Long teamId) {
         requireTeam(principal, teamId);
+        if (manager(principal)) return people.activeEmployees().stream()
+                .filter(employee -> teamId.equals(employee.teamId()))
+                .map(employee -> new EmployeeOption(employee.id(), employee.name())).toList();
         return people.activeDirectReports(principal.getEmployeeId(), teamId).stream()
                 .map(employee -> new EmployeeOption(employee.id(), employee.name())).toList();
     }
@@ -77,10 +82,12 @@ public class ScheduleService {
         List<Schedule> found = schedules.findByTeamIdAndPeriodEndGreaterThanEqualAndPeriodStartLessThanEqualOrderByPeriodStartAscIdAsc(
                 teamId, from, to);
         if (!includeDrafts) found = found.stream().filter(s -> s.getStatus() == Schedule.Status.PUBLISHED).toList();
-        Set<Long> permitted = people.activeDirectReportIds(principal.getEmployeeId(), teamId).stream().collect(Collectors.toSet());
+        Set<Long> permitted = manager(principal) ? null : people.activeDirectReportIds(principal.getEmployeeId(), teamId)
+                .stream().collect(Collectors.toSet());
         return toResponses(found, entries.findByScheduleIdInOrderByWorkDateAscStartTimeAscIdAsc(
                 found.stream().map(Schedule::getId).toList()).stream()
-                .filter(e -> permitted.contains(e.getEmployeeId()) && !e.getWorkDate().isBefore(from) && !e.getWorkDate().isAfter(to))
+                .filter(e -> (permitted == null || permitted.contains(e.getEmployeeId()))
+                        && !e.getWorkDate().isBefore(from) && !e.getWorkDate().isAfter(to))
                 .toList());
     }
 
@@ -99,25 +106,25 @@ public class ScheduleService {
         requireTeam(principal, request.teamId());
         validateHeader(request);
         Schedule schedule = schedules.save(new Schedule(request.teamId(), request.periodStart(), request.periodEnd()));
-        replaceEntries(principal, schedule, request.entries(), List.of());
+        replaceEntries(principal, schedule, request.entries(), request.removedEntryIds(), List.of());
         return toResponses(List.of(schedule), entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(schedule.getId())).getFirst();
     }
 
     @Transactional
     public ScheduleResponse update(AccountPrincipal principal, Long scheduleId, WriteRequest request) {
-        Schedule schedule = schedules.findById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
+        Schedule schedule = schedules.findLockedById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
         requireTeam(principal, schedule.getTeamId());
         if (!schedule.getTeamId().equals(request.teamId())) throw forbidden("A schedule cannot be moved to another team");
         validateHeader(request);
         List<ScheduleEntry> oldEntries = entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(scheduleId);
         schedule.update(request.teamId(), request.periodStart(), request.periodEnd());
-        replaceEntries(principal, schedule, request.entries(), oldEntries);
+        replaceEntries(principal, schedule, request.entries(), request.removedEntryIds(), oldEntries);
         return toResponses(List.of(schedule), entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(scheduleId)).getFirst();
     }
 
     @Transactional
     public ScheduleResponse publish(AccountPrincipal principal, Long scheduleId) {
-        Schedule schedule = schedules.findById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
+        Schedule schedule = schedules.findLockedById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
         requireTeam(principal, schedule.getTeamId());
         List<ScheduleEntry> scheduled = entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(scheduleId);
         validateEntries(principal, schedule, scheduled, true);
@@ -127,49 +134,97 @@ public class ScheduleService {
         return toResponses(List.of(schedule), scheduled).getFirst();
     }
 
+    @Transactional
+    public void discardDraft(AccountPrincipal principal, Long scheduleId) {
+        Schedule schedule = schedules.findLockedById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
+        requireTeam(principal, schedule.getTeamId());
+        if (schedule.getStatus() != Schedule.Status.DRAFT) throw conflict("Only a draft schedule can be discarded");
+        List<ScheduleEntry> scheduled = entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(scheduleId);
+        Set<Long> permitted = editableEmployeeIds(principal, schedule.getTeamId());
+        if (!manager(principal) && scheduled.stream().anyMatch(entry -> !permitted.contains(entry.getEmployeeId()))) {
+            throw forbidden("Draft includes entries outside your permitted direct reports");
+        }
+        entries.deleteAll(scheduled);
+        schedules.delete(schedule);
+    }
+
     private void replaceEntries(AccountPrincipal principal, Schedule schedule, List<EntryRequest> requests,
-            List<ScheduleEntry> existing) {
+            List<Long> removalIds, List<ScheduleEntry> existing) {
         java.util.stream.Stream.concat(existing.stream().map(ScheduleEntry::getEmployeeId),
                 requests.stream().map(EntryRequest::employeeId).filter(java.util.Objects::nonNull))
                 .distinct().sorted().forEach(people::lockEmployee);
+        Set<Long> permitted = editableEmployeeIds(principal, schedule.getTeamId());
         Map<Long, ScheduleEntry> byId = existing.stream().collect(Collectors.toMap(ScheduleEntry::getId, Function.identity()));
-        Set<Long> retained = new HashSet<>();
-        List<ScheduleEntry> desired = new ArrayList<>();
+        List<ScheduleEntry> changed = new ArrayList<>();
         Set<String> uniqueIds = new HashSet<>();
         for (EntryRequest request : requests) {
             if (request.id() != null) {
                 if (!uniqueIds.add(request.id().toString())) throw bad("Schedule entry appears more than once");
                 ScheduleEntry entry = byId.get(request.id());
                 if (entry == null) throw bad("Entry does not belong to this schedule");
-                retained.add(entry.getId());
+                if (!manager(principal) && !permitted.contains(entry.getEmployeeId())) throw forbidden("Entry is outside your permitted direct reports");
                 if (attendance.existsByEmployeeIdAndAttendanceDate(entry.getEmployeeId(), entry.getWorkDate())
                         && assignmentChanged(entry, request)) {
                     throw conflict("An entry with attendance recorded cannot change employee, date or scheduled times");
                 }
                 entry.update(schedule.getId(), request.employeeId(), request.workDate(), request.startTime(), request.endTime(), clean(request.notes()));
-                desired.add(entry);
+                changed.add(entry);
             } else {
-                desired.add(new ScheduleEntry(schedule.getId(), request.employeeId(), request.workDate(),
+                changed.add(new ScheduleEntry(schedule.getId(), request.employeeId(), request.workDate(),
                         request.startTime(), request.endTime(), clean(request.notes())));
             }
         }
-        for (ScheduleEntry previous : existing) {
-            if (!retained.contains(previous.getId()) && attendance.existsByEmployeeIdAndAttendanceDate(previous.getEmployeeId(), previous.getWorkDate())) {
+        List<Long> requestRemovalIds = removalIds == null ? List.of() : removalIds;
+        Set<Long> removedIds = new HashSet<>();
+        for (Long id : requests.stream().map(EntryRequest::id).filter(java.util.Objects::nonNull).toList()) {
+            if (requestRemovalIds.contains(id)) throw bad("An entry cannot be updated and removed together");
+        }
+        for (Long id : requestRemovalIds) {
+            if (!removedIds.add(id)) throw bad("Schedule entry removal appears more than once");
+            ScheduleEntry previous = byId.get(id);
+            if (previous == null) throw bad("Entry does not belong to this schedule");
+            if (!manager(principal) && !permitted.contains(previous.getEmployeeId())) throw forbidden("Entry is outside your permitted direct reports");
+            if (attendance.existsByEmployeeIdAndAttendanceDate(previous.getEmployeeId(), previous.getWorkDate())) {
                 throw conflict("An entry with attendance recorded cannot be removed");
             }
         }
-        validateEntries(principal, schedule, desired, schedule.getStatus() == Schedule.Status.PUBLISHED);
-        validateAssignmentConflicts(desired, schedule.getId(), schedule.getStatus() == Schedule.Status.PUBLISHED);
-        entries.deleteAll(existing.stream().filter(entry -> !retained.contains(entry.getId())).toList());
-        entries.saveAll(desired);
+        List<ScheduleEntry> resulting = new ArrayList<>(existing.stream()
+                .filter(entry -> !removedIds.contains(entry.getId())).toList());
+        resulting.addAll(changed.stream().filter(entry -> entry.getId() == null).toList());
+        if (schedule.getStatus() == Schedule.Status.PUBLISHED && resulting.isEmpty()) {
+            throw bad("A published schedule needs at least one entry");
+        }
+        for (ScheduleEntry entry : resulting) {
+            if (entry.getWorkDate().isBefore(schedule.getPeriodStart()) || entry.getWorkDate().isAfter(schedule.getPeriodEnd())) {
+                throw bad("Schedule period cannot exclude an existing entry");
+            }
+        }
+        validateEntries(principal, schedule, changed, false);
+        validateInternalConflicts(resulting, schedule.getStatus() == Schedule.Status.PUBLISHED);
+        validateAssignmentConflicts(changed, schedule.getId(), schedule.getStatus() == Schedule.Status.PUBLISHED);
+        entries.deleteAll(existing.stream().filter(entry -> removedIds.contains(entry.getId())).toList());
+        entries.saveAll(changed);
+    }
+
+    private void validateInternalConflicts(List<ScheduleEntry> values, boolean publishing) {
+        for (int i = 0; i < values.size(); i++) {
+            ScheduleEntry current = values.get(i);
+            for (int j = 0; j < i; j++) {
+                ScheduleEntry prior = values.get(j);
+                if (!prior.getEmployeeId().equals(current.getEmployeeId()) || !prior.getWorkDate().equals(current.getWorkDate())) continue;
+                if (publishing) throw conflict("V1 supports one published schedule entry per employee per day");
+                if (prior.getStartTime().isBefore(current.getEndTime()) && prior.getEndTime().isAfter(current.getStartTime())) {
+                    throw conflict("Employee has overlapping schedule entries");
+                }
+            }
+        }
     }
 
     private void validateEntries(AccountPrincipal principal, Schedule schedule, List<ScheduleEntry> values, boolean publishing) {
         if (values.isEmpty() && publishing) throw bad("A schedule needs at least one entry before publishing");
         Set<String> seen = new HashSet<>();
         Map<Long, EmployeeInfo> validated = new java.util.HashMap<>();
-        Set<Long> permittedEmployees = people.activeDirectReportIds(principal.getEmployeeId(), schedule.getTeamId())
-                .stream().collect(Collectors.toSet());
+        Set<Long> permittedEmployees = editableEmployeeIds(principal, schedule.getTeamId());
         for (ScheduleEntry entry : values) {
             if (entry.getEmployeeId() == null || entry.getWorkDate() == null || entry.getStartTime() == null || entry.getEndTime() == null) {
                 throw bad("Employee, work date and shift times are required");
@@ -200,7 +255,7 @@ public class ScheduleService {
                     throw conflict("Employee has overlapping schedule entries");
                 }
             }
-            if (scheduleId != null && entries.countOverlapsOutsideSchedule(current.getEmployeeId(), current.getWorkDate(),
+            if (publishing && scheduleId != null && entries.countOverlapsOutsideSchedule(current.getEmployeeId(), current.getWorkDate(),
                     scheduleId, current.getStartTime(), current.getEndTime()) > 0) {
                 throw conflict("Employee has an overlapping schedule entry");
             }
@@ -259,6 +314,10 @@ public class ScheduleService {
     }
 
     private void requireTeam(AccountPrincipal principal, Long teamId) {
+        if (manager(principal)) {
+            if (people.team(teamId).isEmpty()) throw notFound("Team was not found");
+            return;
+        }
         if (!"SUPERVISOR".equals(principal.getRole())) throw forbidden("Access denied");
         if (!authorizedTeam(principal, principal.getEmployeeId()).equals(teamId)) throw forbidden("This team is not assigned to you");
     }
@@ -289,5 +348,12 @@ public class ScheduleService {
     private AttendanceModuleException forbidden(String message) { return new AttendanceModuleException(HttpStatus.FORBIDDEN, message); }
     private AttendanceModuleException conflict(String message) { return new AttendanceModuleException(HttpStatus.CONFLICT, message); }
     private AttendanceModuleException notFound(String message) { return new AttendanceModuleException(HttpStatus.NOT_FOUND, message); }
+    private boolean manager(AccountPrincipal principal) { return "MANAGER_ADMIN".equals(principal.getRole()); }
+    private Set<Long> editableEmployeeIds(AccountPrincipal principal, Long teamId) {
+        if (manager(principal)) return people.activeEmployees().stream()
+                .filter(employee -> teamId.equals(employee.teamId()))
+                .map(EmployeeInfo::id).collect(Collectors.toSet());
+        return people.activeDirectReportIds(principal.getEmployeeId(), teamId).stream().collect(Collectors.toSet());
+    }
     private void requireRole(AccountPrincipal principal, String role) { if (!role.equals(principal.getRole())) throw forbidden("Access denied"); }
 }
