@@ -1,16 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Modal from '../../../components/common/Modal'
-
-function FormField({ label, required, children }) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-semibold text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
-  )
-}
 
 export default function CreateEmployeeModal({
   open,
@@ -20,261 +9,339 @@ export default function CreateEmployeeModal({
   teams = [],
   supervisors = []
 }) {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    jobTitle: '',
-    hireDate: new Date().toISOString().split('T')[0],
-    departmentId: '',
-    teamId: '',
-    supervisorId: '',
-    createAccount: false,
-    username: '',
-    password: '',
-    role: 'EMPLOYEE'
-  })
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [jobTitle, setJobTitle] = useState('')
+  const [hireDate, setHireDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [departmentId, setDepartmentId] = useState('')
+  const [teamId, setTeamId] = useState('')
+  const [supervisorId, setSupervisorId] = useState('')
+
+  // System user account creation
+  const [createAccount, setCreateAccount] = useState(true)
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('EvoqDemo2026!')
+  const [role, setRole] = useState('EMPLOYEE')
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+  // Initialize department and team defaults when options load
+  useEffect(() => {
+    if (departments.length > 0 && !departmentId) {
+      const eng = departments.find(d => d.name.toLowerCase().includes('engineer'))
+      setDepartmentId(eng ? String(eng.id) : String(departments[0].id))
+    }
+  }, [departments, departmentId])
+
+  useEffect(() => {
+    if (teams.length > 0 && !teamId) {
+      setTeamId(String(teams[0].id))
+    }
+  }, [teams, teamId])
+
+  // Automatically suggest username when email changes
+  const handleEmailChange = (val) => {
+    setEmail(val)
+    if (!username || username === email.split('@')[0]) {
+      setUsername(val.split('@')[0])
+    }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
+
+    const trimmedName = fullName.trim()
+    if (!trimmedName) {
+      setError('Full name is required.')
+      return
+    }
+
+    const nameParts = trimmedName.split(/\s+/)
+    let firstName = nameParts[0]
+    let lastName = nameParts.slice(1).join(' ')
+    if (!lastName) {
+      lastName = '-'
+    }
+
+    if (!departmentId) {
+      setError('Please select a department.')
+      return
+    }
+
     setSubmitting(true)
 
     try {
       const payload = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim() || null,
-        address: formData.address.trim() || null,
-        jobTitle: formData.jobTitle.trim(),
-        hireDate: formData.hireDate,
-        departmentId: Number(formData.departmentId),
-        teamId: formData.teamId ? Number(formData.teamId) : null,
-        supervisorId: formData.supervisorId ? Number(formData.supervisorId) : null,
-        createAccount: formData.createAccount,
-        username: formData.createAccount ? formData.username.trim() : null,
-        password: formData.createAccount ? formData.password : null,
-        role: formData.createAccount ? formData.role : null
+        firstName,
+        lastName,
+        email: email.trim(),
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        jobTitle: jobTitle.trim(),
+        hireDate,
+        departmentId: Number(departmentId),
+        teamId: teamId ? Number(teamId) : null,
+        supervisorId: supervisorId ? Number(supervisorId) : null,
+        createAccount,
+        username: createAccount ? (username.trim() || email.split('@')[0]) : null,
+        password: createAccount ? password : null,
+        role: createAccount ? role : null
       }
 
       await onSubmit(payload)
       onClose()
+      // Reset form
+      setFullName('')
+      setEmail('')
+      setPhone('')
+      setAddress('')
+      setJobTitle('')
+      setUsername('')
+      setPassword('EvoqDemo2026!')
     } catch (err) {
-      setError(err.message || 'Failed to onboard employee')
+      setError(err.message || 'Failed to add employee record')
     } finally {
       setSubmitting(false)
     }
   }
 
+  const activeSupervisors = supervisors.filter(s => s.status === 'ACTIVE')
+
+  const footer = (
+    <>
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={submitting}
+        className="px-4 py-2.5 rounded-full border border-gray-200 text-xs font-bold hover:bg-gray-50 transition"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        form="create-employee-form"
+        disabled={submitting}
+        className="px-5 py-2.5 rounded-full bg-[#1A1D1F] hover:bg-black text-white text-xs font-bold transition disabled:opacity-50"
+      >
+        {submitting ? 'Saving...' : 'Save'}
+      </button>
+    </>
+  )
+
   return (
-    <Modal open={open} title="Create Employee" onClose={() => !submitting && onClose()}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal
+      open={open}
+      title="Add employee"
+      subtitle="Official employee and organization information."
+      onClose={() => !submitting && onClose()}
+      footer={footer}
+      size="max-w-2xl"
+    >
+      <form id="create-employee-form" onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl">
+          <div className="p-3 text-xs text-app-pink bg-app-pink-bg rounded-2xl font-semibold">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="First Name" required>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Full name *
+            </span>
             <input
               type="text"
               required
-              value={formData.firstName}
-              onChange={e => handleChange('firstName', e.target.value)}
-              placeholder="e.g. David"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              placeholder="e.g. David Perera"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
-          </FormField>
+          </label>
 
-          <FormField label="Last Name" required>
-            <input
-              type="text"
-              required
-              value={formData.lastName}
-              onChange={e => handleChange('lastName', e.target.value)}
-              placeholder="e.g. Perera"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
-            />
-          </FormField>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Work Email" required>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Email *
+            </span>
             <input
               type="email"
               required
-              value={formData.email}
-              onChange={e => handleChange('email', e.target.value)}
-              placeholder="david@evoq.com"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              value={email}
+              onChange={e => handleEmailChange(e.target.value)}
+              placeholder="e.g. david.perera@evoq.ai"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
-          </FormField>
+          </label>
 
-          <FormField label="Phone Number">
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Phone
+            </span>
             <input
               type="text"
-              value={formData.phone}
-              onChange={e => handleChange('phone', e.target.value)}
-              placeholder="077 123 4567"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="e.g. +94 77 123 4567"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
-          </FormField>
-        </div>
+          </label>
 
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label="Job Title" required>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Address
+            </span>
+            <input
+              type="text"
+              value={address}
+              onChange={e => setAddress(e.target.value)}
+              placeholder="e.g. Colombo 05"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Job title *
+            </span>
             <input
               type="text"
               required
-              value={formData.jobTitle}
-              onChange={e => handleChange('jobTitle', e.target.value)}
+              value={jobTitle}
+              onChange={e => setJobTitle(e.target.value)}
               placeholder="e.g. Software Engineer"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
-          </FormField>
+          </label>
 
-          <FormField label="Hire Date" required>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Joined date *
+            </span>
             <input
               type="date"
               required
-              value={formData.hireDate}
-              onChange={e => handleChange('hireDate', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              value={hireDate}
+              onChange={e => setHireDate(e.target.value)}
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
-          </FormField>
-        </div>
+          </label>
 
-        <div className="grid grid-cols-3 gap-3">
-          <FormField label="Department" required>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Department *
+            </span>
             <select
-              required
-              value={formData.departmentId}
-              onChange={e => handleChange('departmentId', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white"
+              value={departmentId}
+              onChange={e => setDepartmentId(e.target.value)}
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
-              <option value="">Select Dept</option>
+              <option value="">Select Department</option>
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
-          </FormField>
+          </label>
 
-          <FormField label="Team / Project">
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Team / Project
+            </span>
             <select
-              value={formData.teamId}
-              onChange={e => handleChange('teamId', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white"
+              value={teamId}
+              onChange={e => setTeamId(e.target.value)}
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="">No Project</option>
               {teams.map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
-          </FormField>
-
-          <FormField label="Supervisor">
-            <select
-              value={formData.supervisorId}
-              onChange={e => handleChange('supervisorId', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white"
-            >
-              <option value="">None (Head)</option>
-              {supervisors.map(s => (
-                <option key={s.id} value={s.id}>{s.fullName}</option>
-              ))}
-            </select>
-          </FormField>
-        </div>
-
-        <FormField label="Home Address">
-          <input
-            type="text"
-            value={formData.address}
-            onChange={e => handleChange('address', e.target.value)}
-            placeholder="e.g. 123 Galle Road, Colombo"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
-          />
-        </FormField>
-
-        {/* Login Account Section */}
-        <div className="pt-2 border-t border-gray-100">
-          <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-gray-800">
-            <input
-              type="checkbox"
-              checked={formData.createAccount}
-              onChange={e => handleChange('createAccount', e.target.checked)}
-              className="rounded text-blue-600 focus:ring-0"
-            />
-            <span>Create System Login Account</span>
           </label>
 
-          {formData.createAccount && (
-            <div className="grid grid-cols-3 gap-3 mt-3 p-3 bg-gray-50 rounded-xl">
-              <FormField label="Username" required>
-                <input
-                  type="text"
-                  required={formData.createAccount}
-                  value={formData.username}
-                  onChange={e => handleChange('username', e.target.value)}
-                  placeholder="e.g. david.p"
-                  className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-                />
-              </FormField>
-
-              <FormField label="Temporary Password" required>
-                <input
-                  type="password"
-                  required={formData.createAccount}
-                  minLength={6}
-                  value={formData.password}
-                  onChange={e => handleChange('password', e.target.value)}
-                  placeholder="Min 6 chars"
-                  className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-                />
-              </FormField>
-
-              <FormField label="System Role" required>
-                <select
-                  value={formData.role}
-                  onChange={e => handleChange('role', e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
-                >
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="SUPERVISOR">Supervisor</option>
-                  <option value="MANAGER_ADMIN">Manager / Admin</option>
-                </select>
-              </FormField>
-            </div>
-          )}
+          <label className="block sm:col-span-2">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+              Supervisor
+            </span>
+            <select
+              value={supervisorId}
+              onChange={e => setSupervisorId(e.target.value)}
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+            >
+              <option value="">— (None / Top Leadership)</option>
+              {activeSupervisors.map(s => (
+                <option key={s.id} value={s.id}>
+                  E{String(s.id).padStart(3, '0')} · {s.fullName} ({s.jobTitle})
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl transition"
-          >
-            {submitting ? 'Creating...' : 'Create Employee'}
-          </button>
+        {/* User Account Provisioning */}
+        <div className="pt-4 border-t border-app-border mt-4">
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={createAccount}
+              onChange={e => setCreateAccount(e.target.checked)}
+              className="w-4 h-4 rounded text-[#1A1D1F] focus:ring-0 cursor-pointer"
+            />
+            <span className="text-xs font-extrabold txt">
+              Create system login user account
+            </span>
+          </label>
+
+          {createAccount && (
+            <div className="grid sm:grid-cols-3 gap-3 mt-3 p-4 bg-app-subtle subtle rounded-2xl border border-app-border/40">
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+                  Username
+                </span>
+                <input
+                  type="text"
+                  required={createAccount}
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  placeholder="e.g. david.p"
+                  className="w-full mt-1.5 px-3 py-2 rounded-xl bg-white border border-app-border text-xs font-semibold outline-none"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+                  Temporary password
+                </span>
+                <input
+                  type="password"
+                  required={createAccount}
+                  minLength={6}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Min 6 chars"
+                  className="w-full mt-1.5 px-3 py-2 rounded-xl bg-white border border-app-border text-xs font-semibold outline-none"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+                  System role
+                </span>
+                <select
+                  value={role}
+                  onChange={e => setRole(e.target.value)}
+                  className="w-full mt-1.5 px-3 py-2 rounded-xl bg-white border border-app-border text-xs font-semibold outline-none"
+                >
+                  <option value="EMPLOYEE">Employee</option>
+                  <option value="SUPERVISOR">Supervisor / Team Lead</option>
+                  <option value="MANAGER_ADMIN">Manager / Admin</option>
+                </select>
+              </label>
+            </div>
+          )}
         </div>
       </form>
     </Modal>
