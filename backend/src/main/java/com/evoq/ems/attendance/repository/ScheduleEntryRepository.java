@@ -18,9 +18,24 @@ public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Lo
     List<ScheduleEntry> findByScheduleIdInOrderByWorkDateAscStartTimeAscIdAsc(Collection<Long> scheduleIds);
 
     @Query("""
-            select count(entry) from ScheduleEntry entry
+            select entry from ScheduleEntry entry join Schedule schedule on schedule.id = entry.scheduleId
+            where schedule.status = com.evoq.ems.attendance.domain.Schedule.Status.PUBLISHED
+              and entry.workDate between :from and :to
+              and (not exists (select record.id from AttendanceRecord record
+                               where record.employeeId = entry.employeeId and record.attendanceDate = entry.workDate)
+                   or exists (select record.id from AttendanceRecord record
+                              where record.employeeId = entry.employeeId and record.attendanceDate = entry.workDate
+                                and record.checkInTime is not null and record.checkOutTime is null))
+            order by entry.employeeId, entry.workDate, entry.id
+            """)
+    List<ScheduleEntry> findPendingAttendanceBetweenDates(@Param("from") LocalDate from,
+            @Param("to") LocalDate to);
+
+    @Query("""
+            select count(entry) from ScheduleEntry entry join Schedule schedule on schedule.id = entry.scheduleId
             where entry.employeeId = :employeeId and entry.workDate = :workDate
               and entry.scheduleId <> :scheduleId
+              and schedule.status = com.evoq.ems.attendance.domain.Schedule.Status.PUBLISHED
               and entry.startTime < :endTime and entry.endTime > :startTime
             """)
     long countOverlapsOutsideSchedule(@Param("employeeId") Long employeeId,

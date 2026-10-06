@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,19 +40,19 @@ public class ScheduleController {
     }
 
     @GetMapping("/teams")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public List<TeamResponse> teams(@AuthenticationPrincipal AccountPrincipal principal) {
         return schedules.managedTeams(principal);
     }
 
     @GetMapping("/teams/{teamId}/employees")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public List<EmployeeOption> employees(@AuthenticationPrincipal AccountPrincipal principal, @PathVariable Long teamId) {
         return schedules.teamEmployees(principal, teamId);
     }
 
     @GetMapping("/teams/{teamId}")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public List<ScheduleResponse> team(@AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable Long teamId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -66,7 +67,7 @@ public class ScheduleController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public ResponseEntity<ScheduleResponse> create(@AuthenticationPrincipal AccountPrincipal principal,
             @Valid @RequestBody WriteRequest request) {
         ScheduleResponse created = schedules.create(principal, request);
@@ -74,15 +75,22 @@ public class ScheduleController {
     }
 
     @PutMapping("/{scheduleId}")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public ScheduleResponse update(@AuthenticationPrincipal AccountPrincipal principal,
             @PathVariable Long scheduleId, @Valid @RequestBody WriteRequest request) {
         return schedules.update(principal, scheduleId, request);
     }
 
     @PostMapping("/{scheduleId}/publish")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public ScheduleResponse publish(@AuthenticationPrincipal AccountPrincipal principal, @PathVariable Long scheduleId) {
         return schedules.publish(principal, scheduleId);
+    }
+
+    @DeleteMapping("/{scheduleId}")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
+    public ResponseEntity<Void> discardDraft(@AuthenticationPrincipal AccountPrincipal principal, @PathVariable Long scheduleId) {
+        schedules.discardDraft(principal, scheduleId);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -17,6 +17,7 @@ import com.evoq.ems.attendance.domain.AttendanceRecord;
 import com.evoq.ems.attendance.service.AttendanceService;
 import com.evoq.ems.attendance.web.AttendanceController;
 import com.evoq.ems.attendance.web.AttendanceDtos.RecordResponse;
+import com.evoq.ems.attendance.web.AttendanceDtos.TodayResponse;
 import com.evoq.ems.attendance.web.AttendanceModuleExceptionHandler;
 import com.evoq.ems.auth.AccountPrincipal;
 import com.evoq.ems.auth.DatabaseUserDetailsService;
@@ -43,8 +44,30 @@ class AttendanceApiSecurityTests {
 
     @Test
     void anonymousAccessIsRejected() throws Exception {
+        mvc.perform(get("/api/attendance-records/today"))
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/api/attendance-records/me?from=2026-09-01&to=2026-09-30"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "EMPLOYEE")
+    void employeeCanReadApprovedLeaveTodayWithoutScheduleOrAttendance() throws Exception {
+        when(attendance.today(null)).thenReturn(new TodayResponse(LocalDate.of(2026, 9, 29),
+                false, null, null, null, "ON_LEAVE", false, false, null));
+
+        mvc.perform(get("/api/attendance-records/today"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.date").value("2026-09-29"))
+                .andExpect(jsonPath("$.checkInState").value("ON_LEAVE"))
+                .andExpect(jsonPath("$.scheduled").value(false))
+                .andExpect(jsonPath("$.scheduleEntryId").doesNotExist())
+                .andExpect(jsonPath("$.scheduledStart").doesNotExist())
+                .andExpect(jsonPath("$.scheduledEnd").doesNotExist())
+                .andExpect(jsonPath("$.canCheckIn").value(false))
+                .andExpect(jsonPath("$.canCheckOut").value(false))
+                .andExpect(jsonPath("$.attendance").doesNotExist());
+        verify(attendance).today(null);
     }
 
     @Test

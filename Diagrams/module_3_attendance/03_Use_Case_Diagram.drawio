@@ -1,73 +1,89 @@
-<mxfile host="app.diagrams.net">
-  <diagram id="page1" name="Attendance &amp; Scheduling Use Case">
-    <mxGraphModel dx="1320" dy="888" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-        <mxCell id="2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=16;strokeWidth=2;" value="Attendance &amp; Scheduling Management" vertex="1">
-          <mxGeometry height="650" width="650" x="250" y="40" as="geometry" />
-        </mxCell>
-        <mxCell id="3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Employee" vertex="1">
-          <mxGeometry height="120" width="70" x="60" y="160" as="geometry" />
-        </mxCell>
-        <mxCell id="4" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Supervisor / Team Lead" vertex="1">
-          <mxGeometry height="120" width="110" x="45" y="385" as="geometry" />
-        </mxCell>
-        <mxCell id="5" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Manager / Admin" vertex="1">
-          <mxGeometry height="120" width="100" x="950" y="360" as="geometry" />
-        </mxCell>
-        <mxCell id="10" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Current Schedule" vertex="1">
-          <mxGeometry height="70" width="220" x="340" y="80" as="geometry" />
-        </mxCell>
-        <mxCell id="11" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Own Attendance" vertex="1">
-          <mxGeometry height="70" width="220" x="600" y="110" as="geometry" />
-        </mxCell>
-        <mxCell id="12" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Create Team Schedule" vertex="1">
-          <mxGeometry height="70" width="220" x="290" y="280" as="geometry" />
-        </mxCell>
-        <mxCell id="13" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Update Team Schedule" vertex="1">
-          <mxGeometry height="70" width="220" x="600" y="300" as="geometry" />
-        </mxCell>
-        <mxCell id="14" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Team Attendance" vertex="1">
-          <mxGeometry height="70" width="220" x="460" y="410" as="geometry" />
-        </mxCell>
-        <mxCell id="15" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Attendance Records" vertex="1">
-          <mxGeometry height="70" width="220" x="590" y="545" as="geometry" />
-        </mxCell>
-        <mxCell id="16" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Manage Attendance Corrections" vertex="1">
-          <mxGeometry height="70" width="230" x="320" y="545" as="geometry" />
-        </mxCell>
-        <mxCell id="17" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Check Scheduling Conflicts" vertex="1">
-          <mxGeometry height="65" width="230" x="455" y="205" as="geometry" />
-        </mxCell>
-        <mxCell id="100" edge="1" parent="1" source="3" style="endArrow=none;html=1;rounded=0;" target="10">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="101" edge="1" parent="1" source="3" style="endArrow=none;html=1;rounded=0;" target="11">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="102" edge="1" parent="1" source="4" style="endArrow=none;html=1;rounded=0;" target="12">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="103" edge="1" parent="1" source="4" style="endArrow=none;html=1;rounded=0;" target="13">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="104" edge="1" parent="1" source="4" style="endArrow=none;html=1;rounded=0;" target="14">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="105" edge="1" parent="1" source="5" style="endArrow=none;html=1;rounded=0;" target="15">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="106" edge="1" parent="1" source="5" style="endArrow=none;html=1;rounded=0;" target="16">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="120" edge="1" parent="1" source="12" style="dashed=1;endArrow=open;endFill=0;html=1;rounded=0;" target="17" value="&lt;&lt;include&gt;&gt;">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="121" edge="1" parent="1" source="13" style="dashed=1;endArrow=open;endFill=0;html=1;rounded=0;" target="17" value="&lt;&lt;include&gt;&gt;">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="page1" name="Attendance &amp; Scheduling Use Case">
+        <mxGraphModel dx="1146" dy="725" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fontSize=16;strokeWidth=2;" value="Attendance &amp; Scheduling Management" vertex="1">
+                    <mxGeometry height="650" width="650" x="250" y="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Employee" vertex="1">
+                    <mxGeometry height="120" width="70" x="60" y="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="sDa3lH_5zlb08MZAyPPr-122" edge="1" parent="1" source="4" style="edgeStyle=none;html=1;">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="95" y="290" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="4" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Supervisor / Team Lead" vertex="1">
+                    <mxGeometry height="120" width="110" x="40" y="385" as="geometry"/>
+                </mxCell>
+                <mxCell id="sDa3lH_5zlb08MZAyPPr-121" edge="1" parent="1" source="5" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;curved=0;">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1000" y="770"/>
+                            <mxPoint x="10" y="770"/>
+                            <mxPoint x="10" y="320"/>
+                            <mxPoint x="95" y="320"/>
+                        </Array>
+                        <mxPoint x="95" y="290" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="5" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Manager / Admin" vertex="1">
+                    <mxGeometry height="120" width="100" x="950" y="360" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Current Schedule" vertex="1">
+                    <mxGeometry height="70" width="220" x="340" y="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Own Attendance" vertex="1">
+                    <mxGeometry height="70" width="220" x="600" y="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Create Team Schedule" vertex="1">
+                    <mxGeometry height="70" width="220" x="290" y="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Update Team Schedule" vertex="1">
+                    <mxGeometry height="70" width="220" x="600" y="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Team Attendance" vertex="1">
+                    <mxGeometry height="70" width="220" x="460" y="410" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="View Attendance Records" vertex="1">
+                    <mxGeometry height="70" width="220" x="590" y="545" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Manage Attendance Corrections" vertex="1">
+                    <mxGeometry height="70" width="230" x="320" y="545" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" parent="1" style="ellipse;whiteSpace=wrap;html=1;fontSize=14;" value="Check Scheduling Conflicts" vertex="1">
+                    <mxGeometry height="65" width="230" x="455" y="205" as="geometry"/>
+                </mxCell>
+                <mxCell id="100" edge="1" parent="1" source="3" style="endArrow=none;html=1;rounded=0;" target="10">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="101" edge="1" parent="1" source="3" style="endArrow=none;html=1;rounded=0;" target="11">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="102" edge="1" parent="1" source="4" style="endArrow=none;html=1;rounded=0;" target="12">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="103" edge="1" parent="1" source="4" style="endArrow=none;html=1;rounded=0;" target="13">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="104" edge="1" parent="1" source="4" style="endArrow=none;html=1;rounded=0;" target="14">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="105" edge="1" parent="1" source="5" style="endArrow=none;html=1;rounded=0;" target="15">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="106" edge="1" parent="1" source="5" style="endArrow=none;html=1;rounded=0;" target="16">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="120" edge="1" parent="1" source="12" style="dashed=1;endArrow=open;endFill=0;html=1;rounded=0;" target="17" value="&lt;&lt;include&gt;&gt;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="121" edge="1" parent="1" source="13" style="dashed=1;endArrow=open;endFill=0;html=1;rounded=0;" target="17" value="&lt;&lt;include&gt;&gt;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>

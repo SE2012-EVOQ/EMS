@@ -20,6 +20,8 @@ import com.evoq.ems.attendance.integration.EmployeeTeamReader;
 import com.evoq.ems.attendance.repository.AttendanceRecordRepository;
 import com.evoq.ems.attendance.repository.ScheduleEntryRepository;
 import com.evoq.ems.attendance.service.AttendanceService;
+import com.evoq.ems.attendance.service.AttendanceReconciliationService;
+import com.evoq.ems.attendance.service.ApprovedLeaveScheduleCoordinator;
 import com.evoq.ems.attendance.service.ScheduleService;
 import com.evoq.ems.attendance.web.ScheduleDtos.EntryRequest;
 import com.evoq.ems.attendance.web.ScheduleDtos.WriteRequest;
@@ -44,6 +46,8 @@ class AttendanceMySqlWorkflowTests {
     @Autowired AttendanceRecordRepository records;
     @Autowired EmployeeTeamReader people;
     @Autowired ApprovedLeaveReader leaves;
+    @Autowired AttendanceReconciliationService reconciliation;
+    @Autowired ApprovedLeaveScheduleCoordinator leaveSchedules;
     @Autowired JdbcTemplate jdbc;
 
     @Test
@@ -80,16 +84,68 @@ class AttendanceMySqlWorkflowTests {
         AttendanceService checkOutService = attendanceAt("2099-01-15T17:13:00Z");
         var checkedOut = checkOutService.checkOut(employee);
         assertEquals(LocalTime.of(17, 13), checkedOut.checkOut());
-        assertEquals(new BigDecimal("8.10"), checkedOut.hours());
+        assertEquals(new BigDecimal("7.88"), checkedOut.hours());
         assertEquals(HttpStatus.CONFLICT, assertThrows(AttendanceModuleException.class,
                 () -> checkOutService.checkOut(employee)).status());
         assertEquals(1, records.findByEmployeeIdAndAttendanceDateBetweenOrderByAttendanceDateDescIdDesc(
                 employeeId, workDate, workDate).size());
     }
 
+    @Test
+    void finishedShiftBecomesAbsentOnceAndLeavesPendingQueue() {
+        Long employeeId = reservedEmployeeId("demo.employee");
+        LocalDate workDate = availableWorkDate(employeeId, LocalDate.of(2099, 3, 15));
+        publishShift(employeeId, workDate);
+
+        assertEquals(1, entries.findPendingAttendanceBetweenDates(workDate, workDate).stream()
+                .filter(entry -> employeeId.equals(entry.getEmployeeId())).count());
+        reconciliation.reconcile(employeeId, workDate, workDate.atTime(17, 1));
+        reconciliation.reconcile(employeeId, workDate, workDate.atTime(17, 2));
+
+        var attendance = records.findByEmployeeIdAndAttendanceDate(employeeId, workDate).orElseThrow();
+        assertEquals(AttendanceRecord.Status.ABSENT, attendance.getStatus());
+        assertEquals(new BigDecimal("0.00"), attendance.getWorkingHours());
+        assertEquals(0, entries.findPendingAttendanceBetweenDates(workDate, workDate).stream()
+                .filter(entry -> employeeId.equals(entry.getEmployeeId())).count());
+        assertEquals(1, records.findByEmployeeIdAndAttendanceDateBetweenOrderByAttendanceDateDescIdDesc(
+                employeeId, workDate, workDate).size());
+    }
+
+    @Test
+    void approvedLeaveRemovesFuturePublishedEntry() {
+        Long employeeId = reservedEmployeeId("demo.employee");
+        LocalDate workDate = availableWorkDate(employeeId, LocalDate.of(2099, 4, 15));
+        publishShift(employeeId, workDate);
+
+        assertEquals(true, leaveSchedules.removeFutureShifts(employeeId, workDate, workDate));
+        entries.flush();
+        assertEquals(0, entries.findPublishedEntriesForEmployeeDate(employeeId, workDate).size());
+    }
+
+    private LocalDate availableWorkDate(Long employeeId, LocalDate preferred) {
+        LocalDate date = preferred;
+        while (!leaves.approvedConflicts(employeeId, date, date).isEmpty()
+                || !entries.findPublishedEntriesForEmployeeDate(employeeId, date).isEmpty()) {
+            date = date.plusDays(1);
+        }
+        return date;
+    }
+
+    private void publishShift(Long employeeId, LocalDate workDate) {
+        Long supervisorId = reservedEmployeeId("demo.supervisor");
+        Long teamId = people.employee(supervisorId).orElseThrow().teamId();
+        AccountPrincipal supervisor = mock(AccountPrincipal.class);
+        when(supervisor.getEmployeeId()).thenReturn(supervisorId);
+        when(supervisor.getRole()).thenReturn("SUPERVISOR");
+        var schedule = schedules.create(supervisor, new WriteRequest(teamId, workDate, workDate,
+                List.of(new EntryRequest(null, employeeId, workDate, LocalTime.of(9, 0),
+                        LocalTime.of(17, 0), "MySQL workflow fixture"))));
+        schedules.publish(supervisor, schedule.id());
+    }
+
     private AttendanceService attendanceAt(String instant) {
         Clock clock = Clock.fixed(Instant.parse(instant), ZoneId.of("UTC"));
-        return new AttendanceService(records, entries, people, clock);
+        return new AttendanceService(records, entries, people, leaves, clock);
     }
 
     private Long reservedEmployeeId(String username) {
