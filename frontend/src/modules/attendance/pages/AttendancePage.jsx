@@ -7,10 +7,9 @@ import AttendanceTable from '../components/AttendanceTable'
 import AttendanceEditor from '../components/AttendanceEditor'
 import { attendanceService } from '../services/attendanceService'
 
-const dateString = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-const initialRange = () => {
-  const now = new Date()
-  return { from: dateString(new Date(now.getFullYear(), now.getMonth(), 1)), to: dateString(new Date(now.getFullYear(), now.getMonth() + 1, 0)) }
+const monthRange = businessDate => {
+  const date = new Date(`${businessDate}T00:00:00Z`)
+  return { from: `${businessDate.slice(0, 7)}-01`, to: new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).toISOString().slice(0, 10) }
 }
 
 export default function AttendancePage() {
@@ -19,7 +18,8 @@ export default function AttendancePage() {
   const canManage = role === 'MANAGER_ADMIN'
   const isSupervisor = role === 'SUPERVISOR'
   const [view, setView] = useState('mine')
-  const [range, setRange] = useState(initialRange)
+  const [businessDate, setBusinessDate] = useState(null)
+  const [range, setRange] = useState({ from: '', to: '' })
   const [status, setStatus] = useState('ALL')
   const [employeeId, setEmployeeId] = useState('')
   const [teams, setTeams] = useState([])
@@ -31,10 +31,25 @@ export default function AttendancePage() {
   const [lookupError, setLookupError] = useState('')
   const [reload, setReload] = useState(0)
   const [editor, setEditor] = useState(null)
+  const [openingEditor, setOpeningEditor] = useState(false)
+
+  const recordException = async () => {
+    setOpeningEditor(true); setLookupError('')
+    try {
+      const today = await attendanceService.today()
+      setBusinessDate(today.date)
+      setEditor({ mode: 'create' })
+    } catch (err) { setLookupError(err.message) } finally { setOpeningEditor(false) }
+  }
 
   useEffect(() => {
     let active = true
     setLookupError('')
+    attendanceService.today().then(data => {
+      if (!active) return
+      setBusinessDate(data.date)
+      setRange(current => current.from || current.to ? current : monthRange(data.date))
+    }).catch(err => { if (active) setLookupError(err.message) })
     if (isSupervisor) {
       attendanceService.teams().then(data => {
         if (!active) return
@@ -51,6 +66,10 @@ export default function AttendancePage() {
 
   useEffect(() => {
     let active = true
+    if (!range.from || !range.to) {
+      setLoading(false)
+      return () => { active = false }
+    }
     if (range.from > range.to) {
       setRows([])
       setError('The end date must be on or after the start date.')
@@ -86,7 +105,7 @@ export default function AttendancePage() {
   if (canManage) tabs.push({ id: 'all', label: 'All records' })
 
   return <>
-    <PageHeader title="Attendance records" description="Review employee check-ins, check-outs and administrative exceptions." actions={canManage && <button type="button" onClick={() => setEditor({ mode: 'create' })} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white"><Plus className="h-4 w-4" />Record exception</button>} />
+    <PageHeader title="Attendance records" description="Review employee check-ins, check-outs and administrative exceptions." actions={canManage && <button type="button" disabled={openingEditor || !businessDate} onClick={recordException} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Plus className="h-4 w-4" />Record exception</button>} />
     <div className="mb-5 flex gap-2 overflow-x-auto" role="tablist" aria-label="Attendance views">
       {tabs.map(tab => <button key={tab.id} type="button" role="tab" aria-selected={view === tab.id} onClick={() => setView(tab.id)} className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${view === tab.id ? 'bg-[#1A1D1F] text-white' : 'surface border border-app-border bg-white txt'}`}>{tab.label}</button>)}
     </div>
@@ -108,6 +127,6 @@ export default function AttendancePage() {
       {lookupError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-app-pink-bg px-4 py-3 text-xs text-app-pink"><span>{lookupError}</span><button type="button" onClick={() => setReload(value => value + 1)} className="font-bold underline">Retry</button></div>}
       {loading ? <div role="status" className="py-12 text-center text-xs font-semibold text-app-muted muted">Loading attendance…</div> : !error && <AttendanceTable rows={visibleRows} canEdit={canManage} onEdit={record => setEditor({ mode: 'correct', record })} />}
     </Card>
-    {editor && <AttendanceEditor record={editor.record} employees={employees} onClose={() => setEditor(null)} onSaved={date => { const selected = new Date(`${date}T00:00:00`); setEditor(null); setView('all'); setEmployeeId(''); setStatus('ALL'); setRange({ from: dateString(new Date(selected.getFullYear(), selected.getMonth(), 1)), to: dateString(new Date(selected.getFullYear(), selected.getMonth() + 1, 0)) }); setReload(value => value + 1) }} />}
+    {editor && <AttendanceEditor record={editor.record} employees={employees} businessDate={businessDate} onClose={() => setEditor(null)} onSaved={date => { setEditor(null); setView('all'); setEmployeeId(''); setStatus('ALL'); setRange(monthRange(date)); setReload(value => value + 1) }} />}
   </>
 }

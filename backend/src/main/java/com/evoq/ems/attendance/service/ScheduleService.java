@@ -1,5 +1,6 @@
 package com.evoq.ems.attendance.service;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -38,14 +39,17 @@ public class ScheduleService {
     private final AttendanceRecordRepository attendance;
     private final EmployeeTeamReader people;
     private final ApprovedLeaveReader leaves;
+    private final Clock clock;
 
     public ScheduleService(ScheduleRepository schedules, ScheduleEntryRepository entries,
-            AttendanceRecordRepository attendance, EmployeeTeamReader people, ApprovedLeaveReader leaves) {
+            AttendanceRecordRepository attendance, EmployeeTeamReader people, ApprovedLeaveReader leaves,
+            Clock attendanceClock) {
         this.schedules = schedules;
         this.entries = entries;
         this.attendance = attendance;
         this.people = people;
         this.leaves = leaves;
+        this.clock = attendanceClock;
     }
 
     @Transactional(readOnly = true)
@@ -127,6 +131,10 @@ public class ScheduleService {
         Schedule schedule = schedules.findLockedById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
         requireTeam(principal, schedule.getTeamId());
         List<ScheduleEntry> scheduled = entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(scheduleId);
+        if (schedule.getStatus() == Schedule.Status.DRAFT) {
+            LocalDate businessDate = LocalDate.now(clock);
+            scheduled.forEach(entry -> requireNonHistoricalDate(entry.getWorkDate(), businessDate));
+        }
         validateEntries(principal, schedule, scheduled, true);
         lockEmployees(scheduled);
         validateAssignmentConflicts(scheduled, scheduleId, true);
@@ -150,6 +158,7 @@ public class ScheduleService {
 
     private void replaceEntries(AccountPrincipal principal, Schedule schedule, List<EntryRequest> requests,
             List<Long> removalIds, List<ScheduleEntry> existing) {
+        LocalDate businessDate = LocalDate.now(clock);
         java.util.stream.Stream.concat(existing.stream().map(ScheduleEntry::getEmployeeId),
                 requests.stream().map(EntryRequest::employeeId).filter(java.util.Objects::nonNull))
                 .distinct().sorted().forEach(people::lockEmployee);
@@ -163,6 +172,9 @@ public class ScheduleService {
                 ScheduleEntry entry = byId.get(request.id());
                 if (entry == null) throw bad("Entry does not belong to this schedule");
                 if (!manager(principal) && !permitted.contains(entry.getEmployeeId())) throw forbidden("Entry is outside your permitted direct reports");
+                if (!entry.getWorkDate().equals(request.workDate())) {
+                    requireNonHistoricalDate(request.workDate(), businessDate);
+                }
                 if (attendance.existsByEmployeeIdAndAttendanceDate(entry.getEmployeeId(), entry.getWorkDate())
                         && assignmentChanged(entry, request)) {
                     throw conflict("An entry with attendance recorded cannot change employee, date or scheduled times");
@@ -170,6 +182,7 @@ public class ScheduleService {
                 entry.update(schedule.getId(), request.employeeId(), request.workDate(), request.startTime(), request.endTime(), clean(request.notes()));
                 changed.add(entry);
             } else {
+                requireNonHistoricalDate(request.workDate(), businessDate);
                 changed.add(new ScheduleEntry(schedule.getId(), request.employeeId(), request.workDate(),
                         request.startTime(), request.endTime(), clean(request.notes())));
             }
@@ -272,6 +285,12 @@ public class ScheduleService {
     private boolean assignmentChanged(ScheduleEntry current, EntryRequest request) {
         return !current.getEmployeeId().equals(request.employeeId()) || !current.getWorkDate().equals(request.workDate())
                 || !current.getStartTime().equals(request.startTime()) || !current.getEndTime().equals(request.endTime());
+    }
+
+    private void requireNonHistoricalDate(LocalDate workDate, LocalDate businessDate) {
+        if (workDate != null && workDate.isBefore(businessDate)) {
+            throw bad("New or rescheduled shifts and draft publication require a work date on or after the business date " + businessDate);
+        }
     }
 
     private void lockEmployees(List<ScheduleEntry> values) {

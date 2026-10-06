@@ -10,7 +10,7 @@ export default function ScheduleCalendar({ entries = [], showEmployees = false }
   const shiftsFor = date => entries.filter(entry => entry.workDate === date).sort((a, b) => a.startTime.localeCompare(b.startTime))
 
   return <div className="overflow-x-auto">
-    <div className="calendar-grid" style={{ minWidth: `${Math.max(620, dates.length * 150 + 150)}px` }}>
+    <div className="calendar-grid" style={{ gridTemplateColumns: `86px repeat(${dates.length}, minmax(150px, 1fr))`, minWidth: `${Math.max(620, dates.length * 150 + 150)}px` }}>
       <div className="calendar-cell bg-app-subtle subtle text-[10px] font-bold text-app-muted muted flex items-center">DATE</div>
       {dates.map(date => <div key={date} className="calendar-cell bg-app-subtle subtle">
         <div className="text-xs font-extrabold txt">{new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short' })}</div>
