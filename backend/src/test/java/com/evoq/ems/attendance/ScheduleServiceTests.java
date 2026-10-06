@@ -9,6 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +42,8 @@ class ScheduleServiceTests {
     private final AttendanceRecordRepository attendance = mock(AttendanceRecordRepository.class);
     private final EmployeeTeamReader people = mock(EmployeeTeamReader.class);
     private final ApprovedLeaveReader leaves = mock(ApprovedLeaveReader.class);
-    private final ScheduleService service = new ScheduleService(schedules, entries, attendance, people, leaves);
+    private final Clock clock = Clock.fixed(Instant.parse("2026-09-30T03:30:00Z"), ZoneId.of("Asia/Colombo"));
+    private final ScheduleService service = new ScheduleService(schedules, entries, attendance, people, leaves, clock);
     private final AccountPrincipal supervisor = mock(AccountPrincipal.class);
     private final LocalDate day = LocalDate.of(2026, 9, 30);
 
@@ -70,6 +74,114 @@ class ScheduleServiceTests {
         assertEquals(Schedule.Status.DRAFT, result.status());
         verify(people).lockEmployee(3L);
         verify(leaves).approvedConflicts(3L, day, day);
+    }
+
+    @Test
+    void newShiftCannotBeCreatedBeforeColomboBusinessDateEvenWhileUtcIsYesterday() {
+        Clock boundary = Clock.fixed(Instant.parse("2026-09-29T18:35:00Z"), ZoneId.of("Asia/Colombo"));
+        ScheduleService business = new ScheduleService(schedules, entries, attendance, people, leaves, boundary);
+        Schedule schedule = new Schedule(7L, day.minusDays(1), day);
+        when(schedules.save(any(Schedule.class))).thenReturn(schedule);
+
+        var rejected = assertThrows(AttendanceModuleException.class, () -> business.create(supervisor,
+                new WriteRequest(7L, day.minusDays(1), day, List.of(new EntryRequest(null, 3L,
+                        day.minusDays(1), LocalTime.of(9, 0), LocalTime.of(17, 0), null)))));
+
+        assertEquals(HttpStatus.BAD_REQUEST, rejected.status());
+        assertEquals(true, rejected.getMessage().contains(day.toString()));
+        verify(entries, never()).saveAll(any());
+    }
+
+    @Test
+    void addingNewHistoricalEntryToExistingScheduleIsRejected() {
+        Schedule schedule = existingSchedule(day.minusDays(2), day, true);
+        ScheduleEntry historical = existingEntry(day.minusDays(2));
+        when(schedules.findLockedById(41L)).thenReturn(Optional.of(schedule));
+        when(entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(41L)).thenReturn(List.of(historical));
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(AttendanceModuleException.class,
+                () -> service.update(supervisor, 41L, new WriteRequest(7L, day.minusDays(2), day,
+                        List.of(new EntryRequest(null, 3L, day.minusDays(1), LocalTime.of(9, 0),
+                                LocalTime.of(17, 0), null))))).status());
+        assertEquals(day.minusDays(2), historical.getWorkDate());
+        verify(entries, never()).saveAll(any());
+        verify(entries, never()).deleteAll(any());
+    }
+
+    @Test
+    void existingIdCannotBypassBackdatingProtectionByMovingToAnotherPastDate() {
+        Schedule schedule = existingSchedule(day.minusDays(2), day, true);
+        ScheduleEntry existing = existingEntry(day);
+        when(schedules.findLockedById(41L)).thenReturn(Optional.of(schedule));
+        when(entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(41L)).thenReturn(List.of(existing));
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(AttendanceModuleException.class,
+                () -> service.update(supervisor, 41L, new WriteRequest(7L, day.minusDays(2), day,
+                        List.of(new EntryRequest(51L, 3L, day.minusDays(1), LocalTime.of(9, 0),
+                                LocalTime.of(17, 0), null))))).status());
+        assertEquals(day, existing.getWorkDate());
+        verify(entries, never()).saveAll(any());
+    }
+
+    @Test
+    void retainingAnExistingHistoricalDateIsAllowedAndDoesNotRewriteIt() {
+        LocalDate historicalDate = day.minusDays(2);
+        Schedule schedule = existingSchedule(historicalDate, day, true);
+        ScheduleEntry existing = existingEntry(historicalDate);
+        when(schedules.findLockedById(41L)).thenReturn(Optional.of(schedule));
+        when(entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(41L)).thenReturn(List.of(existing));
+
+        var updated = service.update(supervisor, 41L, new WriteRequest(7L, historicalDate, day,
+                List.of(new EntryRequest(51L, 3L, historicalDate, LocalTime.of(9, 0), LocalTime.of(17, 0), "Note"))));
+
+        assertEquals(historicalDate, existing.getWorkDate());
+        assertEquals(historicalDate, updated.entries().getFirst().workDate());
+        assertEquals("Note", existing.getNotes());
+    }
+
+    @Test
+    void draftPublicationRejectsHistoricalDatesWithoutChangingTheDraft() {
+        LocalDate historicalDate = day.minusDays(1);
+        Schedule schedule = existingSchedule(historicalDate, historicalDate, false);
+        ScheduleEntry historical = existingEntry(historicalDate);
+        when(schedules.findLockedById(41L)).thenReturn(Optional.of(schedule));
+        when(entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(41L)).thenReturn(List.of(historical));
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(AttendanceModuleException.class,
+                () -> service.publish(supervisor, 41L)).status());
+        assertEquals(Schedule.Status.DRAFT, schedule.getStatus());
+        assertEquals(historicalDate, historical.getWorkDate());
+        verify(entries, never()).saveAll(any());
+        verify(entries, never()).deleteAll(any());
+    }
+
+    @Test
+    void draftThatWasValidYesterdayCannotPublishAfterBusinessMidnight() {
+        Schedule schedule = existingSchedule(day, day, false);
+        when(schedules.findLockedById(41L)).thenReturn(Optional.of(schedule));
+        when(entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(41L)).thenReturn(List.of(existingEntry(day)));
+        Clock tomorrow = Clock.fixed(Instant.parse("2026-09-30T18:30:00Z"), ZoneId.of("Asia/Colombo"));
+        ScheduleService business = new ScheduleService(schedules, entries, attendance, people, leaves, tomorrow);
+
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(AttendanceModuleException.class,
+                () -> business.publish(supervisor, 41L)).status());
+        assertEquals(Schedule.Status.DRAFT, schedule.getStatus());
+    }
+
+    @Test
+    void publishedHistoricalScheduleRemainsReadableAndIsNotSubjectToDraftDateValidation() {
+        LocalDate historicalDate = day.minusDays(10);
+        Schedule schedule = existingSchedule(historicalDate, historicalDate, true);
+        when(schedules.findById(41L)).thenReturn(Optional.of(schedule));
+        when(schedules.findLockedById(41L)).thenReturn(Optional.of(schedule));
+        when(entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(41L))
+                .thenReturn(List.of(existingEntry(historicalDate)));
+
+        assertEquals(historicalDate, service.get(supervisor, 41L).entries().getFirst().workDate());
+        assertEquals(Schedule.Status.PUBLISHED, service.publish(supervisor, 41L).status());
+        assertEquals(historicalDate, service.get(supervisor, 41L).entries().getFirst().workDate());
+        verify(entries, never()).saveAll(any());
+        verify(entries, never()).deleteAll(any());
     }
 
     @Test
@@ -280,5 +392,17 @@ class ScheduleServiceTests {
                 new EntryRequest(null, 3L, day, LocalTime.of(12, 0), LocalTime.of(17, 0), null))));
         assertEquals(HttpStatus.CONFLICT, assertThrows(AttendanceModuleException.class,
                 () -> service.publish(supervisor, 41L)).status());
+    }
+    private Schedule existingSchedule(LocalDate start, LocalDate end, boolean published) {
+        Schedule schedule = new Schedule(7L, start, end);
+        ReflectionTestUtils.setField(schedule, "id", 41L);
+        if (published) schedule.publish();
+        return schedule;
+    }
+
+    private ScheduleEntry existingEntry(LocalDate workDate) {
+        ScheduleEntry entry = new ScheduleEntry(41L, 3L, workDate, LocalTime.of(9, 0), LocalTime.of(17, 0), null);
+        ReflectionTestUtils.setField(entry, "id", 51L);
+        return entry;
     }
 }

@@ -78,7 +78,7 @@
     .theme-switcher .theme-selected { background: #fff !important; color: #1A1D1F !important; box-shadow: 0 3px 10px rgba(15,18,22,.10); }
 
     .clip-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .calendar-grid { display:grid; grid-template-columns: 86px repeat(5,minmax(150px,1fr)); min-width: 830px; }
+    .calendar-grid { display:grid; }
     .calendar-cell { min-height: 92px; border-right: 1px solid #efefef; border-bottom: 1px solid #efefef; padding: 8px; transition: background-color .25s ease, border-color .25s ease; }
     .no-select { user-select:none; }
 
