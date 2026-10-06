@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import Modal from '../../../components/common/Modal'
 
-function FormField({ label, required, children }) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-semibold text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-    </div>
-  )
-}
-
 export default function EditContactModal({
   open,
   employee,
@@ -30,71 +19,90 @@ export default function EditContactModal({
     }
   }, [employee])
 
+  if (!employee) return null
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
     setSubmitting(true)
 
     try {
-      await onSubmit(employee.id, {
+      const payload = {
         phone: phone.trim() || null,
         address: address.trim() || null
-      })
+      }
+
+      await onSubmit(employee.id, payload)
       onClose()
     } catch (err) {
-      setError(err.message || 'Failed to update contact info')
+      setError(err.message || 'Failed to update contact details')
     } finally {
       setSubmitting(false)
     }
   }
 
-  if (!employee) return null
+  const footer = (
+    <>
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={submitting}
+        className="px-4 py-2.5 rounded-full border border-gray-200 text-xs font-bold hover:bg-gray-50 transition"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={submitting}
+        className="px-5 py-2.5 rounded-full bg-[#1A1D1F] hover:bg-black text-white text-xs font-bold transition disabled:opacity-50"
+      >
+        {submitting ? 'Saving...' : 'Save'}
+      </button>
+    </>
+  )
 
   return (
-    <Modal open={open} title={`Update Contact Info: ${employee.fullName}`} onClose={onClose}>
+    <Modal
+      open={open}
+      title="Edit contact details"
+      subtitle={`Permitted contact information for ${employee.fullName}`}
+      onClose={onClose}
+      footer={footer}
+      size="max-w-lg"
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl">
+          <div className="p-3 text-xs text-app-pink bg-app-pink-bg rounded-2xl font-semibold">
             {error}
           </div>
         )}
 
-        <FormField label="Phone Number">
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+            Phone number
+          </span>
           <input
             type="text"
             value={phone}
             onChange={e => setPhone(e.target.value)}
-            placeholder="077 123 4567"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+            placeholder="e.g. +94 77 123 4567"
+            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
           />
-        </FormField>
+        </label>
 
-        <FormField label="Residential Address">
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+            Home address
+          </span>
           <textarea
             rows={3}
             value={address}
             onChange={e => setAddress(e.target.value)}
-            placeholder="Enter home address"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+            placeholder="e.g. Colombo 05"
+            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt resize-none"
           />
-        </FormField>
-
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl transition"
-          >
-            {submitting ? 'Updating...' : 'Update Contact Info'}
-          </button>
-        </div>
+        </label>
       </form>
     </Modal>
   )
