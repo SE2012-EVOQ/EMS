@@ -16,6 +16,7 @@ import java.util.Map;
 import com.evoq.ems.attendance.domain.AttendanceRecord;
 import com.evoq.ems.attendance.domain.ScheduleEntry;
 import com.evoq.ems.attendance.integration.EmployeeTeamReader;
+import com.evoq.ems.attendance.integration.ApprovedLeaveReader;
 import com.evoq.ems.attendance.integration.EmployeeTeamReader.EmployeeInfo;
 import com.evoq.ems.attendance.repository.AttendanceRecordRepository;
 import com.evoq.ems.attendance.repository.ScheduleEntryRepository;
@@ -37,13 +38,15 @@ public class AttendanceService {
     private final AttendanceRecordRepository records;
     private final ScheduleEntryRepository entries;
     private final EmployeeTeamReader people;
+    private final ApprovedLeaveReader leaves;
     private final Clock clock;
 
     public AttendanceService(AttendanceRecordRepository records, ScheduleEntryRepository entries,
-            EmployeeTeamReader people, Clock attendanceClock) {
+            EmployeeTeamReader people, ApprovedLeaveReader leaves, Clock attendanceClock) {
         this.records = records;
         this.entries = entries;
         this.people = people;
+        this.leaves = leaves;
         this.clock = attendanceClock;
     }
 
@@ -67,10 +70,14 @@ public class AttendanceService {
         boolean canOut = record != null && record.getCheckInTime() != null && record.getCheckOutTime() == null;
         if (record != null && record.getCheckOutTime() != null) state = "COMPLETED";
         else if (canOut) state = "CHECKED_IN";
+        else if (record != null && record.getStatus() == AttendanceRecord.Status.ABSENT) state = "ABSENT";
+        else if (record != null && record.getStatus() == AttendanceRecord.Status.LEAVE) state = "ON_LEAVE";
+        else if (record != null) state = "ALREADY_RECORDED";
+        else if (!leaves.approvedConflicts(principal.getEmployeeId(), date, date).isEmpty()) state = "ON_LEAVE";
         else if (entry == null) state = "NO_SCHEDULE";
         else if (now.isBefore(date.atTime(entry.getStartTime()))) state = "NOT_OPEN";
-        else if (now.isAfter(date.atTime(entry.getStartTime()).plusMinutes(30))) state = "WINDOW_CLOSED";
-        else if (record != null) state = "ALREADY_RECORDED";
+        else if (now.isAfter(date.atTime(entry.getStartTime()).plusMinutes(30))
+                || !now.isBefore(date.atTime(entry.getEndTime()))) state = "WINDOW_CLOSED";
         else { state = "AVAILABLE"; canIn = true; }
         return new TodayResponse(date, entry != null, entry == null ? null : entry.getId(),
                 entry == null ? null : entry.getStartTime(), entry == null ? null : entry.getEndTime(),
@@ -88,10 +95,14 @@ public class AttendanceService {
         if (found.size() != 1) throw conflict(found.isEmpty()
                 ? "No published schedule entry exists for today" : "More than one published shift exists for today");
         ScheduleEntry entry = found.getFirst();
+        if (!leaves.approvedConflicts(employeeId, date, date).isEmpty()) {
+            throw conflict("Check-in is unavailable during approved leave");
+        }
         LocalTime time = now.toLocalTime();
         LocalDateTime scheduledStart = date.atTime(entry.getStartTime());
-        if (now.isBefore(scheduledStart) || now.isAfter(scheduledStart.plusMinutes(30))) {
-            throw conflict("Check-in is available from the scheduled start through 30 minutes after it");
+        if (now.isBefore(scheduledStart) || now.isAfter(scheduledStart.plusMinutes(30))
+                || !now.isBefore(date.atTime(entry.getEndTime()))) {
+            throw conflict("Check-in is available from the scheduled start until the earlier of the shift end or 30 minutes later");
         }
         if (records.existsByEmployeeIdAndAttendanceDate(employeeId, date)) {
             throw conflict("Attendance has already been recorded for today");
@@ -105,7 +116,6 @@ public class AttendanceService {
     public RecordResponse checkOut(AccountPrincipal principal) {
         Long employeeId = principal.getEmployeeId();
         people.lockEmployee(employeeId);
-        activeEmployee(employeeId);
         LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
         List<AttendanceRecord> open = records.findByEmployeeIdAndAttendanceDateAndCheckOutTimeIsNull(employeeId, now.toLocalDate())
                 .stream().filter(record -> record.getCheckInTime() != null).toList();
@@ -114,7 +124,14 @@ public class AttendanceService {
         AttendanceRecord record = open.getFirst();
         LocalTime checkout = now.toLocalTime();
         if (!checkout.isAfter(record.getCheckInTime())) throw conflict("Check-out must be after check-in on the same day");
-        record.checkOut(checkout, calculateHours(record.getCheckInTime(), checkout));
+        List<ScheduleEntry> scheduled = entries.findPublishedEntriesForEmployeeDate(employeeId, record.getAttendanceDate());
+        if (scheduled.size() > 1) throw conflict("More than one published shift exists for today; contact an administrator");
+        LocalTime hoursEnd = scheduled.isEmpty() || checkout.isBefore(scheduled.getFirst().getEndTime())
+                ? checkout : scheduled.getFirst().getEndTime();
+        if (!hoursEnd.isAfter(record.getCheckInTime())) {
+            throw conflict("Scheduled shift end must be after check-in; contact an administrator for correction");
+        }
+        record.checkOut(checkout, calculateHours(record.getCheckInTime(), hoursEnd));
         return responses(List.of(records.save(record))).getFirst();
     }
 
@@ -148,16 +165,15 @@ public class AttendanceService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmployeeOption> activeEmployees(AccountPrincipal principal) {
+    public List<EmployeeOption> employeeOptions(AccountPrincipal principal) {
         requireRole(principal, "MANAGER_ADMIN");
-        return people.activeEmployees().stream().map(employee -> new EmployeeOption(employee.id(), employee.name())).toList();
+        return people.allEmployees().stream().map(employee -> new EmployeeOption(employee.id(), employee.name())).toList();
     }
 
     @Transactional
     public RecordResponse createException(AccountPrincipal principal, ExceptionRequest request) {
         requireRole(principal, "MANAGER_ADMIN");
-        EmployeeInfo employee = people.employee(request.employeeId()).orElseThrow(() -> bad("Employee was not found"));
-        if (!employee.active()) throw bad("Employee must be active");
+        people.employee(request.employeeId()).orElseThrow(() -> bad("Employee was not found"));
         people.lockEmployee(request.employeeId());
         if (records.existsByEmployeeIdAndAttendanceDate(request.employeeId(), request.date())) throw conflict("Attendance already exists for this employee and date");
         BigDecimal hours = validateAndCalculate(request.status(), request.checkIn(), request.checkOut());
@@ -184,7 +200,7 @@ public class AttendanceService {
         return out == null ? BigDecimal.ZERO.setScale(2) : calculateHours(in, out);
     }
 
-    private BigDecimal calculateHours(LocalTime in, LocalTime out) {
+    static BigDecimal calculateHours(LocalTime in, LocalTime out) {
         long seconds = Duration.between(in, out).getSeconds();
         return BigDecimal.valueOf(seconds).divide(BigDecimal.valueOf(3600), 2, RoundingMode.HALF_UP);
     }

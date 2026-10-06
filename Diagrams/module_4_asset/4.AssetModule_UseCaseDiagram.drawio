@@ -1,59 +1,70 @@
 <mxfile host="65bd71144e">
     <diagram id="usecase" name="UseCaseDiagram">
-        <mxGraphModel dx="756" dy="661" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="700" math="0" shadow="0">
+        <mxGraphModel dx="1146" dy="725" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="700" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="ucRegister" value="Register Asset" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="90" width="160" height="50" as="geometry"/>
+                <mxCell id="ucRegister" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Register Asset" vertex="1">
+                    <mxGeometry height="50" width="160" x="200" y="90" as="geometry"/>
                 </mxCell>
-                <mxCell id="ucAssign" value="Assign Asset to Employee" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="170" width="160" height="50" as="geometry"/>
+                <mxCell id="ucAssign" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Assign Asset to Employee" vertex="1">
+                    <mxGeometry height="50" width="160" x="200" y="170" as="geometry"/>
                 </mxCell>
-                <mxCell id="ucUpdateStatus" value="Update Asset Status" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="280" width="160" height="50" as="geometry"/>
+                <mxCell id="ucUpdateStatus" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Update Asset Status" vertex="1">
+                    <mxGeometry height="50" width="160" x="200" y="280" as="geometry"/>
                 </mxCell>
-                <mxCell id="ucViewAll" value="View All Assets" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="350" width="160" height="50" as="geometry"/>
+                <mxCell id="ucViewAll" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="View All Assets" vertex="1">
+                    <mxGeometry height="50" width="160" x="200" y="350" as="geometry"/>
                 </mxCell>
-                <mxCell id="ucViewAssigned" value="View Assigned Assets" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="450" y="100" width="160" height="50" as="geometry"/>
+                <mxCell id="ucViewAssigned" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="View Assigned Assets" vertex="1">
+                    <mxGeometry height="50" width="160" x="450" y="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="ucReturn" value="Return Asset" style="ellipse;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="450" y="310" width="160" height="50" as="geometry"/>
+                <mxCell id="ucReturn" parent="1" style="ellipse;whiteSpace=wrap;html=1;" value="Return Asset" vertex="1">
+                    <mxGeometry height="50" width="160" x="450" y="310" as="geometry"/>
                 </mxCell>
-                <mxCell id="3" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" target="ucViewAssigned" edge="1">
+                <mxCell id="3" edge="1" parent="1" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="ucViewAssigned">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="90" y="185" as="sourcePoint"/>
                         <mxPoint x="440" y="130" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="actorEmp" value="Employee" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="70" y="150" width="30" height="60" as="geometry"/>
+                <mxCell id="actorEmp" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Employee" vertex="1">
+                    <mxGeometry height="60" width="30" x="70" y="150" as="geometry"/>
                 </mxCell>
-                <mxCell id="actorAdmin" value="Manager/Admin" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" parent="1" vertex="1">
-                    <mxGeometry x="680" y="190" width="30" height="60" as="geometry"/>
+                <mxCell id="BVng3Z1sJImvkIXtJm3w-7" edge="1" parent="1" source="actorAdmin" style="edgeStyle=orthogonalEdgeStyle;html=1;rounded=0;" target="actorEmp">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="695" y="160"/>
+                            <mxPoint x="810" y="160"/>
+                            <mxPoint x="810" y="620"/>
+                            <mxPoint x="85" y="620"/>
+                        </Array>
+                        <mxPoint x="700" y="550" as="targetPoint"/>
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="e3" style="endArrow=none;html=1;" parent="1" source="actorAdmin" target="ucRegister" edge="1">
+                <mxCell id="actorAdmin" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;" value="Manager/Admin" vertex="1">
+                    <mxGeometry height="60" width="30" x="680" y="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" edge="1" parent="1" source="actorAdmin" style="endArrow=none;html=1;" target="ucRegister">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e4" style="endArrow=none;html=1;" parent="1" source="actorAdmin" target="ucAssign" edge="1">
+                <mxCell id="e4" edge="1" parent="1" source="actorAdmin" style="endArrow=none;html=1;" target="ucAssign">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e5" style="endArrow=none;html=1;" parent="1" source="actorAdmin" target="ucUpdateStatus" edge="1">
+                <mxCell id="e5" edge="1" parent="1" source="actorAdmin" style="endArrow=none;html=1;" target="ucUpdateStatus">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e6" style="endArrow=none;html=1;" parent="1" source="actorAdmin" target="ucViewAll" edge="1">
+                <mxCell id="e6" edge="1" parent="1" source="actorAdmin" style="endArrow=none;html=1;" target="ucViewAll">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="6" style="edgeStyle=none;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" edge="1">
+                <mxCell id="6" edge="1" parent="1" style="edgeStyle=none;html=1;exitX=1;exitY=0.3333333333333333;exitDx=0;exitDy=0;exitPerimeter=0;">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="90" y="189.65" as="sourcePoint"/>
                         <mxPoint x="470" y="320" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="7" value="Asset &amp; Equipment Management System" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fillColor=none;" vertex="1" parent="1">
-                    <mxGeometry x="190" y="20" width="440" height="460" as="geometry"/>
+                <mxCell id="7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;fillColor=none;" value="Asset &amp; Equipment Management System" vertex="1">
+                    <mxGeometry height="460" width="440" x="190" y="20" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

@@ -1,7 +1,9 @@
 package com.evoq.ems.leave.repository;
 
 import com.evoq.ems.leave.domain.LeaveBalance;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,6 +16,11 @@ public interface LeaveBalanceRepository extends JpaRepository<LeaveBalance, Long
             Long employeeId,
             Long leaveTypeId
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT b FROM LeaveBalance b WHERE b.employee.id = :employeeId AND b.leaveType.id = :leaveTypeId")
+    Optional<LeaveBalance> findLockedForEmployeeType(@Param("employeeId") Long employeeId,
+            @Param("leaveTypeId") Long leaveTypeId);
 
     @Query("""
         SELECT b FROM LeaveBalance b

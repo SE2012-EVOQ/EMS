@@ -1,14 +1,21 @@
 package com.evoq.ems.leave.repository;
 
 import com.evoq.ems.leave.domain.LeaveRequest;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM LeaveRequest r WHERE r.id = :id")
+    Optional<LeaveRequest> findLockedById(@Param("id") Long id);
 
     @Query("""
         SELECT r FROM LeaveRequest r

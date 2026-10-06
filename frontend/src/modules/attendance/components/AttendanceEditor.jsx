@@ -3,22 +3,17 @@ import Modal from '../../../components/common/Modal'
 import { FormField, SelectField } from '../../../components/common/FormField'
 import { attendanceService } from '../services/attendanceService'
 
-const localDate = () => {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
-
-const initialValues = record => ({
+const initialValues = (record, businessDate) => ({
   employeeId: String(record?.employeeId || ''),
-  date: record?.date || localDate(),
+  date: record?.date || businessDate,
   status: record?.status || 'PRESENT',
-  checkIn: record?.checkIn?.slice(0, 5) || '',
-  checkOut: record?.checkOut?.slice(0, 5) || '',
-  note: ''
+  checkIn: record?.checkIn?.slice(0, 8) || '',
+  checkOut: record?.checkOut?.slice(0, 8) || '',
+  note: record?.note || ''
 })
 
-export default function AttendanceEditor({ record, employees, onClose, onSaved }) {
-  const [values, setValues] = useState(() => initialValues(record))
+export default function AttendanceEditor({ record, employees, businessDate, onClose, onSaved }) {
+  const [values, setValues] = useState(() => initialValues(record, businessDate))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const worked = values.status === 'PRESENT' || values.status === 'LATE'
@@ -61,8 +56,8 @@ export default function AttendanceEditor({ record, employees, onClose, onSaved }
         </SelectField>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Check in" type="time" value={values.checkIn} onChange={event => update('checkIn', event.target.value)} disabled={!worked} required={worked} />
-        <FormField label="Check out (optional for an open record)" type="time" value={values.checkOut} onChange={event => update('checkOut', event.target.value)} disabled={!worked} />
+        <FormField label="Check in" type="time" step="1" value={values.checkIn} onChange={event => update('checkIn', event.target.value)} disabled={!worked} required={worked} />
+        <FormField label="Check out (optional for an open record)" type="time" step="1" value={values.checkOut} onChange={event => update('checkOut', event.target.value)} disabled={!worked} />
       </div>
       <p className="text-xs text-app-muted muted">{worked ? 'Hours are calculated by the server. This version supports same-day shifts.' : 'Absent and leave statuses are administrative exceptions; no Leave workflow is changed.'}</p>
       <label className="block"><span className="text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted">Note (optional)</span><textarea value={values.note} onChange={event => update('note', event.target.value)} maxLength={255} rows={3} className="mt-2 w-full rounded-2xl border border-transparent bg-app-subtle px-4 py-3 text-xs font-semibold outline-none focus:border-gray-300" /></label>
