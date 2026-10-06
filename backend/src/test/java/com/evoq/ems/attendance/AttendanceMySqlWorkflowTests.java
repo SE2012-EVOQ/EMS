@@ -84,7 +84,7 @@ class AttendanceMySqlWorkflowTests {
         AttendanceService checkOutService = attendanceAt("2099-01-15T17:13:00Z");
         var checkedOut = checkOutService.checkOut(employee);
         assertEquals(LocalTime.of(17, 13), checkedOut.checkOut());
-        assertEquals(new BigDecimal("8.10"), checkedOut.hours());
+        assertEquals(new BigDecimal("7.88"), checkedOut.hours());
         assertEquals(HttpStatus.CONFLICT, assertThrows(AttendanceModuleException.class,
                 () -> checkOutService.checkOut(employee)).status());
         assertEquals(1, records.findByEmployeeIdAndAttendanceDateBetweenOrderByAttendanceDateDescIdDesc(

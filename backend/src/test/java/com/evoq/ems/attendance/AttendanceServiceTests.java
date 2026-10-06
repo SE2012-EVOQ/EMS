@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -31,6 +32,8 @@ import com.evoq.ems.attendance.web.AttendanceModuleException;
 import com.evoq.ems.auth.AccountPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.HttpStatus;
 
 class AttendanceServiceTests {
@@ -81,6 +84,59 @@ class AttendanceServiceTests {
     }
 
     @Test
+    void approvedLeaveTodayWithoutShiftReportsLeaveWithoutCreatingAttendance() {
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of());
+        when(leaves.approvedConflicts(3L, date, date))
+                .thenReturn(List.of(new ApprovedLeaveReader.LeaveConflict(date.minusDays(1), date.plusDays(1))));
+
+        var today = service.today(employee);
+
+        assertEquals(date, today.date());
+        assertEquals("ON_LEAVE", today.checkInState());
+        assertEquals(false, today.scheduled());
+        assertEquals(null, today.scheduleEntryId());
+        assertEquals(null, today.scheduledStart());
+        assertEquals(null, today.scheduledEnd());
+        assertEquals(false, today.canCheckIn());
+        assertEquals(false, today.canCheckOut());
+        assertEquals(null, today.attendance());
+        verify(leaves).approvedConflicts(3L, date, date);
+        verify(records, never()).save(any());
+    }
+
+    @Test
+    void noApprovedLeaveAndNoShiftReportsNoSchedule() {
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of());
+        when(leaves.approvedConflicts(3L, date, date)).thenReturn(List.of());
+
+        var today = service.today(employee);
+
+        assertEquals("NO_SCHEDULE", today.checkInState());
+        assertEquals(false, today.scheduled());
+        assertEquals(false, today.canCheckIn());
+        assertEquals(false, today.canCheckOut());
+        assertEquals(null, today.attendance());
+        verify(records, never()).save(any());
+    }
+
+    @Test
+    void publishedShiftWithoutLeaveReportsAvailableCheckInAtStart() {
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
+        when(leaves.approvedConflicts(3L, date, date)).thenReturn(List.of());
+
+        var today = service.today(employee);
+
+        assertEquals("AVAILABLE", today.checkInState());
+        assertEquals(true, today.scheduled());
+        assertEquals(LocalTime.of(9, 0), today.scheduledStart());
+        assertEquals(LocalTime.of(17, 0), today.scheduledEnd());
+        assertEquals(true, today.canCheckIn());
+        assertEquals(false, today.canCheckOut());
+        assertEquals(null, today.attendance());
+        verify(records, never()).save(any());
+    }
+
+    @Test
     void todayReportsAutomaticallyRecordedAbsence() {
         when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
         when(records.findByEmployeeIdAndAttendanceDate(3L, date)).thenReturn(Optional.of(
@@ -122,18 +178,87 @@ class AttendanceServiceTests {
     }
 
     @Test
-    void checkoutCalculatesHoursFromServerTimeAndRecord() {
+    void checkoutCapsStandardHoursAtShiftEndAndPreservesActualServerTime() {
         AttendanceRecord open = new AttendanceRecord(3L, date, AttendanceRecord.Status.PRESENT,
                 LocalTime.of(9, 7), null, new BigDecimal("0.00"), null);
         when(records.findByEmployeeIdAndAttendanceDateAndCheckOutTimeIsNull(3L, date)).thenReturn(List.of(open));
         when(records.save(open)).thenReturn(open);
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
         clock = Clock.fixed(Instant.parse("2026-09-29T17:13:00Z"), ZoneId.of("UTC"));
         service = new AttendanceService(records, entries, people, leaves, clock);
 
         var response = service.checkOut(employee);
 
         assertEquals(LocalTime.of(17, 13), response.checkOut());
-        assertEquals(new BigDecimal("8.10"), response.hours());
+        assertEquals(new BigDecimal("7.88"), response.hours());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"16:40:13,7.59", "17:00:00,7.92", "17:20:37,7.92"})
+    void checkoutBeforeAtAndAfterEndUsesSecondsAndHalfUpRounding(String checkout, String hours) {
+        AttendanceRecord open = new AttendanceRecord(3L, date, AttendanceRecord.Status.PRESENT,
+                LocalTime.of(9, 5, 6), null, BigDecimal.ZERO, null);
+        when(records.findByEmployeeIdAndAttendanceDateAndCheckOutTimeIsNull(3L, date)).thenReturn(List.of(open));
+        when(records.save(open)).thenReturn(open);
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
+        clock = Clock.fixed(Instant.parse("2026-09-29T" + checkout + "Z"), ZoneId.of("UTC"));
+        service = new AttendanceService(records, entries, people, leaves, clock);
+
+        var result = service.checkOut(employee);
+
+        assertEquals(LocalTime.parse(checkout), result.checkOut());
+        assertEquals(new BigDecimal(hours), result.hours());
+    }
+
+    @Test
+    void duplicateManualCheckoutIsRejectedWithoutChangingTheSavedResult() {
+        AttendanceRecord open = new AttendanceRecord(3L, date, AttendanceRecord.Status.PRESENT,
+                LocalTime.of(9, 5, 6), null, BigDecimal.ZERO, null);
+        when(records.findByEmployeeIdAndAttendanceDateAndCheckOutTimeIsNull(3L, date))
+                .thenAnswer(call -> open.getCheckOutTime() == null ? List.of(open) : List.of());
+        when(records.save(open)).thenReturn(open);
+        when(entries.findPublishedEntriesForEmployeeDate(3L, date)).thenReturn(List.of(entry()));
+        clock = Clock.fixed(Instant.parse("2026-09-29T17:20:37Z"), ZoneId.of("UTC"));
+        service = new AttendanceService(records, entries, people, leaves, clock);
+
+        service.checkOut(employee);
+        assertEquals(HttpStatus.CONFLICT, assertThrows(AttendanceModuleException.class,
+                () -> service.checkOut(employee)).status());
+        assertEquals(LocalTime.of(17, 20, 37), open.getCheckOutTime());
+        assertEquals(new BigDecimal("7.92"), open.getWorkingHours());
+        verify(records).save(open);
+    }
+
+    @Test
+    void todayAndCheckInUseBusinessDateAndTimeAcrossUtcMidnightBoundary() {
+        LocalDate businessDate = date.plusDays(1);
+        ScheduleEntry shift = new ScheduleEntry(4L, 3L, businessDate,
+                LocalTime.of(0, 0), LocalTime.of(8, 0), null);
+        clock = Clock.fixed(Instant.parse("2026-09-29T18:35:13Z"), ZoneId.of("Asia/Colombo"));
+        service = new AttendanceService(records, entries, people, leaves, clock);
+        when(entries.findPublishedEntriesForEmployeeDate(3L, businessDate)).thenReturn(List.of(shift));
+        when(records.save(any(AttendanceRecord.class))).thenAnswer(call -> call.getArgument(0));
+
+        var today = service.today(employee);
+        assertEquals(businessDate, today.date());
+        assertEquals("AVAILABLE", today.checkInState());
+        var checkedIn = service.checkIn(employee);
+        assertEquals(businessDate, checkedIn.date());
+        assertEquals(LocalTime.of(0, 5, 13), checkedIn.checkIn());
+        assertEquals(AttendanceRecord.Status.PRESENT, checkedIn.status());
+        verify(leaves, times(2)).approvedConflicts(3L, businessDate, businessDate);
+    }
+
+    @Test
+    void checkoutWithoutPublishedShiftPreservesExceptionalRecordElapsedHours() {
+        AttendanceRecord open = new AttendanceRecord(3L, date, AttendanceRecord.Status.PRESENT,
+                LocalTime.of(9, 0), null, BigDecimal.ZERO, null);
+        when(records.findByEmployeeIdAndAttendanceDateAndCheckOutTimeIsNull(3L, date)).thenReturn(List.of(open));
+        when(records.save(open)).thenReturn(open);
+        clock = Clock.fixed(Instant.parse("2026-09-29T17:20:00Z"), ZoneId.of("UTC"));
+        service = new AttendanceService(records, entries, people, leaves, clock);
+
+        assertEquals(new BigDecimal("8.33"), service.checkOut(employee).hours());
     }
 
     @Test

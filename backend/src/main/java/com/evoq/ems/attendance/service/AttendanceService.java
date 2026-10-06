@@ -73,8 +73,8 @@ public class AttendanceService {
         else if (record != null && record.getStatus() == AttendanceRecord.Status.ABSENT) state = "ABSENT";
         else if (record != null && record.getStatus() == AttendanceRecord.Status.LEAVE) state = "ON_LEAVE";
         else if (record != null) state = "ALREADY_RECORDED";
-        else if (entry == null) state = "NO_SCHEDULE";
         else if (!leaves.approvedConflicts(principal.getEmployeeId(), date, date).isEmpty()) state = "ON_LEAVE";
+        else if (entry == null) state = "NO_SCHEDULE";
         else if (now.isBefore(date.atTime(entry.getStartTime()))) state = "NOT_OPEN";
         else if (now.isAfter(date.atTime(entry.getStartTime()).plusMinutes(30))
                 || !now.isBefore(date.atTime(entry.getEndTime()))) state = "WINDOW_CLOSED";
@@ -124,7 +124,14 @@ public class AttendanceService {
         AttendanceRecord record = open.getFirst();
         LocalTime checkout = now.toLocalTime();
         if (!checkout.isAfter(record.getCheckInTime())) throw conflict("Check-out must be after check-in on the same day");
-        record.checkOut(checkout, calculateHours(record.getCheckInTime(), checkout));
+        List<ScheduleEntry> scheduled = entries.findPublishedEntriesForEmployeeDate(employeeId, record.getAttendanceDate());
+        if (scheduled.size() > 1) throw conflict("More than one published shift exists for today; contact an administrator");
+        LocalTime hoursEnd = scheduled.isEmpty() || checkout.isBefore(scheduled.getFirst().getEndTime())
+                ? checkout : scheduled.getFirst().getEndTime();
+        if (!hoursEnd.isAfter(record.getCheckInTime())) {
+            throw conflict("Scheduled shift end must be after check-in; contact an administrator for correction");
+        }
+        record.checkOut(checkout, calculateHours(record.getCheckInTime(), hoursEnd));
         return responses(List.of(records.save(record))).getFirst();
     }
 

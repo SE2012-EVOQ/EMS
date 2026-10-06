@@ -7,11 +7,15 @@ import ScheduleCalendar from '../components/ScheduleCalendar'
 import ScheduleEditor from '../components/ScheduleEditor'
 import TodayAttendanceActions from '../components/TodayAttendanceActions'
 import { scheduleService } from '../services/scheduleService'
+import { attendanceService } from '../services/attendanceService'
 
-const dateString = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-const rangeAroundToday = () => {
-  const now = new Date()
-  return { from: dateString(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7)), to: dateString(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 21)) }
+const rangeAroundToday = businessDate => {
+  const offset = days => {
+    const date = new Date(`${businessDate}T00:00:00Z`)
+    date.setUTCDate(date.getUTCDate() + days)
+    return date.toISOString().slice(0, 10)
+  }
+  return { from: offset(-7), to: offset(21) }
 }
 
 export default function SchedulePage() {
@@ -19,7 +23,8 @@ export default function SchedulePage() {
   const canManage = user?.role === 'SUPERVISOR' || user?.role === 'MANAGER_ADMIN'
   const [view, setView] = useState('team')
   const showingTeam = canManage && view === 'team'
-  const [range, setRange] = useState(rangeAroundToday)
+  const [businessDate, setBusinessDate] = useState(null)
+  const [range, setRange] = useState({ from: '', to: '' })
   const [teams, setTeams] = useState([])
   const [teamId, setTeamId] = useState('')
   const [employees, setEmployees] = useState([])
@@ -29,6 +34,10 @@ export default function SchedulePage() {
   const [error, setError] = useState('')
   const [editor, setEditor] = useState(null)
   const [reload, setReload] = useState(0)
+
+  useEffect(() => {
+    if (businessDate) setRange(current => current.from || current.to ? current : rangeAroundToday(businessDate))
+  }, [businessDate])
 
   useEffect(() => {
     if (!showingTeam) return
@@ -43,7 +52,7 @@ export default function SchedulePage() {
     if (!range.from || !range.to || range.from > range.to) {
       setSchedules([])
       setLoading(false)
-      setError('Choose an end date on or after the start date.')
+      if (range.from || range.to) setError('Choose an end date on or after the start date.')
       return () => { active = false }
     }
     setLoading(true); setError('')
@@ -57,13 +66,29 @@ export default function SchedulePage() {
 
   const refresh = useCallback(() => setReload(value => value + 1), [])
   const save = () => { setEditor(null); refresh() }
+  const create = async () => {
+    setSaving(true); setError('')
+    try {
+      const today = await attendanceService.today()
+      setBusinessDate(today.date)
+      if (range.to < today.date) {
+        setError('The selected period ends before the current business date. Choose a current or future period.')
+        return
+      }
+      setEditor({ mode: 'create' })
+    } catch (err) { setError(err.message) } finally { setSaving(false) }
+  }
   const publish = async id => {
     setSaving(true); setError('')
     try { await scheduleService.publish(id); refresh() } catch (err) { setError(err.message) } finally { setSaving(false) }
   }
   const edit = async id => {
     setSaving(true); setError('')
-    try { setEditor({ mode: 'edit', schedule: await scheduleService.get(id) }) }
+    try {
+      const [schedule, today] = await Promise.all([scheduleService.get(id), attendanceService.today()])
+      setBusinessDate(today.date)
+      setEditor({ mode: 'edit', schedule })
+    }
     catch (err) { setError(err.message) }
     finally { setSaving(false) }
   }
@@ -76,8 +101,8 @@ export default function SchedulePage() {
   }
 
   return <>
-    <PageHeader title="Schedule" description={showingTeam ? 'Plan team shifts and record your own attendance when scheduled.' : 'View your published shifts and record attendance for today.'} actions={showingTeam && <button type="button" disabled={!teamId || !employees.length} onClick={() => setEditor({ mode: 'create' })} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><CalendarPlus className="h-4 w-4" />Create schedule</button>} />
-    <TodayAttendanceActions />
+    <PageHeader title="Schedule" description={showingTeam ? 'Plan team shifts and record your own attendance when scheduled.' : 'View your published shifts and record attendance for today.'} actions={showingTeam && <button type="button" disabled={saving || !teamId || !employees.length || !businessDate || !range.from || !range.to || range.from > range.to || range.to < businessDate} onClick={create} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><CalendarPlus className="h-4 w-4" />Create schedule</button>} />
+    <TodayAttendanceActions onBusinessDate={setBusinessDate} />
     {canManage && <div className="mb-5 flex gap-2" role="tablist" aria-label="Schedule views">
       <button type="button" role="tab" aria-selected={showingTeam} onClick={() => { setEditor(null); setView('team') }} className={`rounded-full px-4 py-2.5 text-xs font-bold ${showingTeam ? 'bg-[#1A1D1F] text-white' : 'surface border border-app-border bg-white txt'}`}>Team schedules</button>
       <button type="button" role="tab" aria-selected={!showingTeam} onClick={() => { setEditor(null); setView('mine') }} className={`rounded-full px-4 py-2.5 text-xs font-bold ${!showingTeam ? 'bg-[#1A1D1F] text-white' : 'surface border border-app-border bg-white txt'}`}>My shifts</button>
@@ -85,7 +110,7 @@ export default function SchedulePage() {
     <div className="mb-5 flex flex-wrap items-end gap-3">
       <label className="text-xs font-bold text-app-muted">From<input type="date" value={range.from} onChange={event => setRange(current => ({ ...current, from: event.target.value }))} className="mt-1 block rounded-xl border border-app-border bg-white px-3 py-2 txt" /></label>
       <label className="text-xs font-bold text-app-muted">To<input type="date" value={range.to} onChange={event => setRange(current => ({ ...current, to: event.target.value }))} className="mt-1 block rounded-xl border border-app-border bg-white px-3 py-2 txt" /></label>
-      <button type="button" onClick={() => setRange(rangeAroundToday())} className="rounded-xl border border-app-border px-3 py-2 text-xs font-bold txt">Today’s range</button>
+      <button type="button" disabled={!businessDate} onClick={() => setRange(rangeAroundToday(businessDate))} className="rounded-xl border border-app-border px-3 py-2 text-xs font-bold txt disabled:opacity-50">Today’s range</button>
     </div>
     {showingTeam && teams.length > 0 && <div className="mb-5 flex items-center gap-3"><label htmlFor="schedule-team" className="text-xs font-bold text-app-muted">Team</label><select id="schedule-team" value={teamId} onChange={event => setTeamId(event.target.value)} className="min-w-56 rounded-xl border border-app-border bg-white px-3 py-2.5 text-xs font-semibold txt">{teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select></div>}
     {error && <div role="alert" className="mb-4 rounded-xl bg-app-pink-bg px-4 py-3 text-xs font-semibold text-app-pink">{error}</div>}
@@ -99,6 +124,6 @@ export default function SchedulePage() {
           </div>
           <ScheduleCalendar entries={schedule.entries} showEmployees={showingTeam} />
         </Card>)}</div>}
-    {showingTeam && editor && <ScheduleEditor schedule={editor.schedule} teamId={teamId} employees={employees} initialPeriod={range} onClose={() => setEditor(null)} onSaved={save} />}
+    {showingTeam && editor && businessDate && <ScheduleEditor schedule={editor.schedule} teamId={teamId} employees={employees} initialPeriod={range} businessDate={businessDate} onClose={() => setEditor(null)} onSaved={save} />}
   </>
 }

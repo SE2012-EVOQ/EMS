@@ -3,22 +3,17 @@ import Modal from '../../../components/common/Modal'
 import { FormField, SelectField } from '../../../components/common/FormField'
 import { attendanceService } from '../services/attendanceService'
 
-const localDate = () => {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
-
-const initialValues = record => ({
+const initialValues = (record, businessDate) => ({
   employeeId: String(record?.employeeId || ''),
-  date: record?.date || localDate(),
+  date: record?.date || businessDate,
   status: record?.status || 'PRESENT',
   checkIn: record?.checkIn?.slice(0, 8) || '',
   checkOut: record?.checkOut?.slice(0, 8) || '',
   note: record?.note || ''
 })
 
-export default function AttendanceEditor({ record, employees, onClose, onSaved }) {
-  const [values, setValues] = useState(() => initialValues(record))
+export default function AttendanceEditor({ record, employees, businessDate, onClose, onSaved }) {
+  const [values, setValues] = useState(() => initialValues(record, businessDate))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const worked = values.status === 'PRESENT' || values.status === 'LATE'
