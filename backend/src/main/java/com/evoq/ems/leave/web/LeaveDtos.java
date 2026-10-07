@@ -13,6 +13,18 @@ public final class LeaveDtos {
     private LeaveDtos() {
     }
 
+    public record TypeSetupRequest(
+            @jakarta.validation.constraints.NotBlank @Size(max = 100) String name,
+            @Size(max = 255) String description) { }
+
+    public record EntitlementRequest(
+            @NotNull @jakarta.validation.constraints.DecimalMin("0.00")
+            @jakarta.validation.constraints.DecimalMax("999.99")
+            @jakarta.validation.constraints.Digits(integer = 3, fraction = 2)
+            BigDecimal entitlementDays) { }
+
+    public record EmployeeBalanceResponse(Long employeeId, String employeeName, BalanceResponse balance) { }
+
     public record LeaveTypeResponse(
             Long id,
             String name,

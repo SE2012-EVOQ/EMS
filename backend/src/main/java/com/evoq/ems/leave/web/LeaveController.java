@@ -36,6 +36,29 @@ public class LeaveController {
         return ResponseEntity.ok(leaveService.getTypes());
     }
 
+    @PostMapping("/types")
+    @PreAuthorize("hasRole('MANAGER_ADMIN')")
+    public LeaveTypeResponse createType(@Valid @RequestBody TypeSetupRequest input) {
+        return leaveService.saveType(null, input);
+    }
+
+    @PutMapping("/types/{id}")
+    @PreAuthorize("hasRole('MANAGER_ADMIN')")
+    public LeaveTypeResponse updateType(@PathVariable Long id, @Valid @RequestBody TypeSetupRequest input) {
+        return leaveService.saveType(id, input);
+    }
+
+    @GetMapping("/setup/employees/{id}")
+    @PreAuthorize("hasRole('MANAGER_ADMIN')")
+    public LeaveOverviewResponse employeeSetup(@PathVariable Long id) { return leaveService.getMyLeave(id); }
+
+    @PutMapping("/setup/employees/{employeeId}/types/{typeId}")
+    @PreAuthorize("hasRole('MANAGER_ADMIN')")
+    public BalanceResponse setEntitlement(@PathVariable Long employeeId, @PathVariable Long typeId,
+            @Valid @RequestBody EntitlementRequest input) {
+        return leaveService.setEntitlement(employeeId, typeId, input);
+    }
+
     @PostMapping("/requests")
     public ResponseEntity<RequestResponse> submit(
             @AuthenticationPrincipal AccountPrincipal principal,

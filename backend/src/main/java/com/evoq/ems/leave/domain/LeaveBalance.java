@@ -62,6 +62,9 @@ public class LeaveBalance {
         return usedDays;
     }
 
+    /** Manual total grant; preserve used history and derive remaining days. */
+    public void setEntitlement(BigDecimal total) { availableDays = total.subtract(usedDays); }
+
     public void approveDays(BigDecimal days) {
         availableDays = availableDays.subtract(days);
         usedDays = usedDays.add(days);

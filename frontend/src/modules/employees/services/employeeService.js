@@ -12,6 +12,7 @@ const buildQuery = (params = {}) => {
 
 export const employeeService = {
   getAll: (params) => apiRequest(`/employees${buildQuery(params)}`),
+  getSupervisorCandidates: () => apiRequest('/employees/supervisor-candidates'),
   getMe: () => apiRequest('/employees/me'),
   getById: (id) => apiRequest(`/employees/${id}`),
   getDirectReports: (id) => apiRequest(`/employees/${id}/direct-reports`),

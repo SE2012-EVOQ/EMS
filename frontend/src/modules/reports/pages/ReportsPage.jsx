@@ -9,8 +9,8 @@ export default function ReportsPage() {
   const source = reportSources.find(item => item.id === selected)
   const Component = source.Component
   return <>
-    <PageHeader title="Reports" description="Module reports use authorized backend data and export the selected scope." />
+    <PageHeader primary title="Reports" />
     <div className="mb-5 flex gap-2 overflow-x-auto" role="tablist" aria-label="Report sources">{reportSources.map(item => <button key={item.id} type="button" role="tab" aria-selected={selected === item.id} onClick={() => setSelected(item.id)} className={`rounded-full px-4 py-2.5 text-xs font-bold ${selected === item.id ? 'bg-[#1A1D1F] text-white' : 'surface border border-app-border'}`}>{item.label}</button>)}</div>
-    <div role="tabpanel" aria-label={`${source.label} report`}>{Component ? <Component /> : <Card><EmptyState icon="BarChart3" title={`${source.label} report is not connected`} description={`${source.owner} can connect an authorized summary and export here.`} /></Card>}</div>
+    <div role="tabpanel" aria-label={`${source.label} report`}>{Component ? <Component /> : <Card><EmptyState icon="BarChart3" title={`${source.label} report unavailable`} description="This report is not available in this version." /></Card>}</div>
   </>
 }

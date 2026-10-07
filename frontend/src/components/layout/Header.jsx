@@ -26,6 +26,7 @@ export default function Header({ onMenu }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [logoutError, setLogoutError] = useState('')
   const [title, subtitle] = meta[pathname] || ['EVOQ EMS', 'Employee management system']
+  const pageHasHeading = ['/dashboard', '/attendance', '/schedule', '/reports'].includes(pathname)
   const roleLabel = roleLabels[user?.role] || 'Account'
 
   const signOut = async () => {
@@ -43,10 +44,10 @@ export default function Header({ onMenu }) {
       <button className="lg:hidden w-10 h-10 bg-white surface rounded-full shadow-sm flex items-center justify-center" onClick={onMenu} aria-label="Open menu"><Menu className="w-4 h-4" /></button>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight txt clip-text">{title}</h1>
+          {pageHasHeading ? <span className="text-xs font-bold text-app-muted">EVOQ EMS</span> : <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight txt clip-text">{title}</h1>}
           <span className="hidden sm:inline-flex text-[10px] px-2 py-1 rounded-full bg-app-blue-bg text-app-blue font-bold">{roleLabel}</span>
         </div>
-        <div className="hidden sm:block text-xs text-app-muted muted font-medium mt-0.5">{subtitle}</div>
+        {!pageHasHeading && <div className="hidden sm:block text-xs text-app-muted muted font-medium mt-0.5">{subtitle}</div>}
       </div>
     </div>
     <div className="relative shrink-0">
