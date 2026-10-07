@@ -20,6 +20,14 @@ public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Lo
     @Query("""
             select entry from ScheduleEntry entry join Schedule schedule on schedule.id = entry.scheduleId
             where schedule.status = com.evoq.ems.attendance.domain.Schedule.Status.PUBLISHED
+              and entry.employeeId in :employeeIds and entry.workDate between :from and :to
+            """)
+    List<ScheduleEntry> findPublishedForEmployees(@Param("employeeIds") Collection<Long> employeeIds,
+            @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("""
+            select entry from ScheduleEntry entry join Schedule schedule on schedule.id = entry.scheduleId
+            where schedule.status = com.evoq.ems.attendance.domain.Schedule.Status.PUBLISHED
               and entry.workDate between :from and :to
               and (not exists (select record.id from AttendanceRecord record
                                where record.employeeId = entry.employeeId and record.attendanceDate = entry.workDate)

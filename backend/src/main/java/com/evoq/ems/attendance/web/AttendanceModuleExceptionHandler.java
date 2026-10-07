@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes = {AttendanceController.class, ScheduleController.class})
+@RestControllerAdvice(assignableTypes = {AttendanceController.class, ScheduleController.class, com.evoq.ems.attendance.report.AttendanceReportController.class})
 public class AttendanceModuleExceptionHandler {
 
     @ExceptionHandler(AttendanceModuleException.class)

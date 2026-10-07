@@ -365,8 +365,9 @@ The example password is public and is only for local development. Use the same
 `DEV_DEMO_PASSWORD` value across your team if you want identical credentials.
 Do not enable the `dev` profile against a production database. These accounts
 let you inspect the protected app. Employee, attendance, schedule, and asset
-pages now use their APIs; leave, dashboard, and reports still await integration.
-A legitimate first Manager/Admin bootstrap remains separate work.
+pages use their APIs. Dashboard and Reports now connect Attendance data; other
+module report/dashboard calculations remain with their owners. Non-dev bootstrap
+and runtime setup are documented in [deployment/README.md](deployment/README.md).
 
 Login uses a server-side Spring Security session. The browser stores only the
 HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
@@ -598,8 +599,8 @@ src/services/
 Employee, attendance, schedule, and asset pages now load data from their APIs.
 Employee and attendance/schedule pages also provide management actions. The asset
 page currently lists records; its register, update, assign, and return actions
-are available through the API but do not yet have page controls. Leave, dashboard,
-and reports still show empty states.
+are available through the API but do not yet have page controls. Dashboard and
+Reports connect Attendance data; other module report/metric sources await their owners.
 
 ---
 
@@ -695,20 +696,41 @@ Attendance and scheduling APIs with role-aware pages and workflows
 Asset register and assignment APIs (register, update, assign, return, and history)
 Asset page listing records from the API
 Authentication, employee, and attendance/scheduling tests
+Attendance reporting, CSV export and role-aware Attendance dashboard
+Session revocation after account changes and central frontend expiry handling
+Opt-in first Manager/Admin bootstrap and external production configuration
+Native/container deployment templates and isolated MySQL CI workflow
 ```
 
 Still under development:
 
 ```text
-First Manager/Admin account bootstrap
 Complete module-specific role authorization
 Leave API integration
 Asset page controls for register, update, assign, return, and assignment history
-Dashboard metrics and reports integration
+Employee/Leave/Asset dashboard metrics and reports
+D-03 combined attendance/leave precedence
 Broader integration testing, including asset workflows
 Deployment
 ```
 
 The frontend does not invent business records or dashboard metrics. Connected
-pages show database records or a genuine empty state; dashboard, leave, and
-reports still await their data sources.
+pages show database records or a genuine empty state. Attendance dashboard and
+reports use backend-authorized data; teammate report sources are explicit placeholders.
+
+
+## Attendance reporting and dashboard
+
+Reports opens the Attendance source; Employee, Leave and Asset sources have explicit owner integration placeholders. The source registry (`frontend/src/modules/reports/reportSources.js`) accepts a module-owned React report component; each owner supplies its own authorized summary/export APIs. The shared page does not calculate teammate reports.
+
+Attendance reports provide employee summaries and daily facts, date/team/employee filters, and an authorized CSV export. API: `GET /api/attendance-reports`, `/options`, `/csv`, `/dashboard`; scope is `MINE`, `TEAM` or `ORGANIZATION`. Employees can read only their own data. Supervisors use their current assigned team and active direct reports. Manager/Admin can filter organization data, including inactive employee records; team filters use current membership. Existing date-range validation (maximum 366-day difference) applies to JSON and CSV. Export uses the same authorization/calculation and quotes cells/neutralizes spreadsheet formulas.
+
+Present/Late/Absent/LEAVE counts reflect **stored attendance statuses**; present and late are separate. Recorded hours are summed from existing rows, preserving the existing manual/automatic cap and administrative corrections. Open rows keep their stored hours. Missing calendar-day records are not counted as absent. Approved leave is shown separately as distinct calendar dates covered in the selected range per employee, including days with no remaining shift. It does not create LEAVE attendance rows or recalculate Leave balances. Overlap counts make recorded attendance plus approved leave visible. These facts are not additive: combined leave precedence/attendance percentages are deferred until D-03 is decided. Current-membership scope is preserved pending D-06; lateness and correction/audit policies remain unchanged.
+
+Dashboard shows the backend's own today state/check-in/out, published-shift counts, open check-ins and the same attendance summaries. Employee view is own data; Supervisor uses permitted team data (own fallback if no team is assigned); Manager/Admin sees organization attendance. It refreshes every 30 seconds while visible and supports manual refresh. Other-module business metrics remain owner integration work.
+
+## Shared sessions and production setup
+
+Cached sessions are revalidated against current account identity/active flag/role/password hash before endpoint authorization. Revocation or role/password changes invalidate the session and return 401. Frontend API handling clears expired authentication/CSRF state centrally; authenticated permission failures stay 403. An account change cannot undo an already-running request. No teammate endpoint permissions were changed.
+
+See [deployment/README.md](deployment/README.md) for the opt-in first Manager/Admin bootstrap, external secrets, `prod` profile, fresh-only non-destructive schema installation, native/container configuration and remaining owner security gaps. `ems.business-timezone` / `EMS_BUSINESS_TIMEZONE` remains configurable, default Asia/Colombo. Do not run destructive schema/sample scripts against retained data. Finalized OOAD diagrams/scenarios remain frozen and do not follow later implementation refinements automatically.

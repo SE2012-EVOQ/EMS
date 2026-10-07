@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { authService } from '../services/authService'
+import { onSessionExpired } from '../services/api'
 
 const AuthContext = createContext(null)
 
@@ -21,7 +22,11 @@ export function AuthProvider({ children }) {
     }
   }
 
-  useEffect(() => { refresh() }, [])
+  useEffect(() => {
+    const unsubscribe = onSessionExpired(() => { setUser(null); setConnectionError(''); setLoading(false) })
+    refresh()
+    return unsubscribe
+  }, [])
 
   const login = async credentials => {
     const authenticatedUser = await authService.login(credentials)
