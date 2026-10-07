@@ -29,6 +29,7 @@ import com.evoq.ems.attendance.web.ScheduleDtos.WriteRequest;
 import com.evoq.ems.auth.AccountPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -114,7 +115,9 @@ public class ScheduleService {
         return toResponses(List.of(schedule), entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(schedule.getId())).getFirst();
     }
 
-    @Transactional
+    // Conflict reads after the employee lock must see the preceding writer's commit,
+    // even when authorization/header reads happened before waiting for that lock.
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ScheduleResponse update(AccountPrincipal principal, Long scheduleId, WriteRequest request) {
         Schedule schedule = schedules.findLockedById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
         requireTeam(principal, schedule.getTeamId());
@@ -126,7 +129,7 @@ public class ScheduleService {
         return toResponses(List.of(schedule), entries.findByScheduleIdOrderByWorkDateAscStartTimeAscIdAsc(scheduleId)).getFirst();
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ScheduleResponse publish(AccountPrincipal principal, Long scheduleId) {
         Schedule schedule = schedules.findLockedById(scheduleId).orElseThrow(() -> notFound("Schedule was not found"));
         requireTeam(principal, schedule.getTeamId());
