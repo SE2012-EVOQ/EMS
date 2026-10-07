@@ -71,8 +71,16 @@ public final class EmployeeDtos {
 
             EmployeeStatus status,
 
-            String role
+            String role,
+            @Size(min = 1, max = 100) String firstName,
+            @Size(min = 1, max = 100) String lastName,
+            @Email @Size(min = 1, max = 150) String email,
+            LocalDate hireDate
     ) {
+        public UpdateOfficialInfoRequest(Long departmentId, Long teamId, Long supervisorId,
+                String jobTitle, EmployeeStatus status, String role) {
+            this(departmentId, teamId, supervisorId, jobTitle, status, role, null, null, null, null);
+        }
     }
 
     public record UpdatePersonalContactRequest(

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from '../../../components/common/Modal'
+import { requestErrorMessage } from '../../../components/common/requestError'
 import { FormField, SelectField } from '../../../components/common/FormField'
 import { attendanceService } from '../services/attendanceService'
 
@@ -36,13 +37,13 @@ export default function AttendanceEditor({ record, employees, businessDate, onCl
       else await attendanceService.createException(payload)
       onSaved(payload.date)
     } catch (err) {
-      setError(err.message)
+      setError(requestErrorMessage(err, 'Saving attendance'))
     } finally {
       setSaving(false)
     }
   }
 
-  return <Modal open onClose={() => { if (!saving) onClose() }} title={record ? 'Correct attendance exception' : 'Record attendance exception'} subtitle={record ? 'Employee and date stay fixed; the server recalculates hours.' : 'For missed check-ins, missed check-outs or other exceptions. Normal attendance uses employee check-in.'}>
+  return <Modal open onClose={() => { if (!saving) onClose() }} title={record ? 'Correct attendance exception' : 'Record attendance exception'} subtitle={record ? 'Update the status, times or note.' : 'Add a missed or corrected attendance record.'}>
     <form onSubmit={submit} className="space-y-4">
       <SelectField label="Employee" value={values.employeeId} onChange={event => update('employeeId', event.target.value)} required disabled={Boolean(record)}>
         <option value="">Select an employee</option>
@@ -59,7 +60,7 @@ export default function AttendanceEditor({ record, employees, businessDate, onCl
         <FormField label="Check in" type="time" step="1" value={values.checkIn} onChange={event => update('checkIn', event.target.value)} disabled={!worked} required={worked} />
         <FormField label="Check out (optional for an open record)" type="time" step="1" value={values.checkOut} onChange={event => update('checkOut', event.target.value)} disabled={!worked} />
       </div>
-      <p className="text-xs text-app-muted muted">{worked ? 'Hours are calculated by the server. This version supports same-day shifts.' : 'Absent and leave statuses are administrative exceptions; no Leave workflow is changed.'}</p>
+      <p className="text-xs text-app-muted muted">{worked ? 'Enter times within the same day.' : 'No check-in or check-out times are needed for this status.'}</p>
       <label className="block"><span className="text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted">Note (optional)</span><textarea value={values.note} onChange={event => update('note', event.target.value)} maxLength={255} rows={3} className="mt-2 w-full rounded-2xl border border-transparent bg-app-subtle px-4 py-3 text-xs font-semibold outline-none focus:border-gray-300" /></label>
       {error && <p role="alert" className="rounded-xl bg-app-pink-bg px-4 py-3 text-xs font-semibold text-app-pink">{error}</p>}
       <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-app-border px-4 py-2.5 text-xs font-bold txt">Cancel</button><button type="submit" disabled={saving} className="rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">{saving ? 'Saving…' : record ? 'Save correction' : 'Record exception'}</button></div>

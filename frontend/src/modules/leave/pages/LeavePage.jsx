@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import LeaveSetup from '../components/LeaveSetup'
+import RequestFeedback from '../../../components/common/RequestFeedback'
 import Card from '../../../components/common/Card'
 import PageHeader from '../../../components/common/PageHeader'
 import { apiRequest } from '../../../services/api'
@@ -40,12 +42,13 @@ export default function LeavePage() {
   })
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [readError, setReadError] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
   async function loadPage() {
     setLoading(true)
-    setError('')
+    setReadError('')
 
     try {
       const currentUser = await apiRequest('/auth/me')
@@ -60,23 +63,10 @@ export default function LeavePage() {
       setOverview(myLeave)
       setTypes(leaveTypes)
 
-      if (currentUser.role === 'SUPERVISOR') {
-        try {
-          setTeamRequests(await getPendingLeaveRequests())
-        } catch {
-          setTeamRequests([])
-        }
-      }
-
-      if (currentUser.role === 'MANAGER_ADMIN') {
-        try {
-          setManagerRequests(await getAllLeaveRequests())
-        } catch {
-          setManagerRequests([])
-        }
-      }
+      if (currentUser.role === 'SUPERVISOR') setTeamRequests(await getPendingLeaveRequests())
+      if (currentUser.role === 'MANAGER_ADMIN') setManagerRequests(await getAllLeaveRequests())
     } catch (err) {
-      setError(err.message || 'Could not load leave information')
+      setReadError(`Leave information unavailable: ${err.message || 'Read failed'}`)
     } finally {
       setLoading(false)
     }
@@ -174,6 +164,8 @@ export default function LeavePage() {
     }
   }
 
+  if (readError) return <><PageHeader title="Leave management" /><RequestFeedback error={readError} loading={loading} onRetry={loadPage} /></>
+
   if (loading) {
     return (
       <>
@@ -198,6 +190,11 @@ export default function LeavePage() {
       />
 
       <div className="space-y-5">
+        {user?.role === 'MANAGER_ADMIN' && <LeaveSetup types={types} onSaved={async () => {
+          try { const [updatedTypes, mine] = await Promise.all([getLeaveTypes(), getMyLeave()]); setTypes(updatedTypes); setOverview(mine) }
+          catch (err) { setReadError(`Leave information unavailable: ${err.message}`) }
+        }} />}
+        {!overview.balances.length && <p className="text-sm text-app-muted">No leave balances configured. Ask your Manager/Admin to set your entitlement.</p>}
         {error && (
           <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
@@ -229,7 +226,7 @@ export default function LeavePage() {
           ))}
         </div>
 
-        {user?.role === 'EMPLOYEE' && (
+        {user && (
           <Card>
             <h2 className="text-lg font-semibold mb-1">
               Submit leave request

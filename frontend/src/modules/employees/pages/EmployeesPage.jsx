@@ -18,6 +18,8 @@ import PageHeader from '../../../components/common/PageHeader'
 import FilterPills from '../../../components/common/FilterPills'
 import { useAuth } from '../../../context/AuthContext'
 
+import OrganizationManagement from '../components/OrganizationManagement'
+import DeactivationReview from '../components/DeactivationReview'
 import EmployeeTable from '../components/EmployeeTable'
 import EmployeeProfileModal from '../components/EmployeeProfileModal'
 import CreateEmployeeModal from '../components/CreateEmployeeModal'
@@ -29,6 +31,8 @@ export default function EmployeesPage() {
   const { user } = useAuth()
   const isManager = user?.role === 'MANAGER_ADMIN'
 
+  const [supervisors, setSupervisors] = useState([])
+  const [deactivation, setDeactivation] = useState(null)
   const [employees, setEmployees] = useState([])
   const [departments, setDepartments] = useState([])
   const [teams, setTeams] = useState([])
@@ -62,14 +66,16 @@ export default function EmployeesPage() {
     setLoading(true)
     setError(null)
     try {
-      const [empList, deptList, teamList] = await Promise.all([
+      const [empList, deptList, teamList, candidates] = await Promise.all([
         employeeService.getAll(),
-        employeeService.getDepartments().catch(() => []),
-        employeeService.getTeams().catch(() => [])
+        isManager ? employeeService.getDepartments() : Promise.resolve(null),
+        isManager ? employeeService.getTeams() : Promise.resolve(null),
+        isManager ? employeeService.getSupervisorCandidates() : Promise.resolve([])
       ])
-      setEmployees(empList || [])
-      setDepartments(deptList || [])
-      setTeams(teamList || [])
+      setEmployees(empList)
+      setDepartments(deptList || [...new Map(empList.filter(e => e.department).map(e => [e.department.id, e.department])).values()])
+      setTeams(teamList || [...new Map(empList.filter(e => e.team).map(e => [e.team.id, e.team])).values()])
+      setSupervisors(candidates)
     } catch (err) {
       setError(err.message || 'Failed to load employee directory')
     } finally {
@@ -124,7 +130,10 @@ export default function EmployeesPage() {
   }
 
   const handleUpdateOfficial = async (id, payload) => {
-    await employeeService.updateOfficial(id, payload)
+    if (payload.status === 'INACTIVE' && editingOfficialEmp.status !== 'INACTIVE') {
+      await new Promise((resolve, reject) => setDeactivation({ employee: editingOfficialEmp,
+        action: () => employeeService.updateOfficial(id, payload), resolve, reject }))
+    } else await employeeService.updateOfficial(id, payload)
     showNotification('Official information updated successfully!')
     loadData()
   }
@@ -136,27 +145,21 @@ export default function EmployeesPage() {
   }
 
   const handleToggleStatus = async (employee) => {
-    const newStatus = employee.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-    const confirmMsg = employee.status === 'ACTIVE'
-      ? `Are you sure you want to deactivate ${employee.fullName}? Their login account will also be disabled.`
-      : `Activate ${employee.fullName}?`
-
-    if (window.confirm(confirmMsg)) {
-      try {
-        await employeeService.changeStatus(employee.id, newStatus)
-        showNotification(`Employee ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully!`)
-        loadData()
-      } catch (err) {
-        showNotification(err.message || 'Status change failed', true)
-      }
+    if (employee.status === 'ACTIVE') {
+      setDeactivation({ employee, action: () => employeeService.changeStatus(employee.id, 'INACTIVE') })
+      return
     }
+    try {
+      await employeeService.changeStatus(employee.id, 'ACTIVE')
+      showNotification('Employee activated'); await loadData()
+    } catch (err) { showNotification(err.message || 'Status change failed', true) }
   }
 
   return (
     <>
       <PageHeader
         title="Employee Directory"
-        description="Comprehensive management of organization personnel, departments, teams, and hierarchical reporting."
+        description={isManager ? "Manage employees, departments and teams." : "Your profile and permitted team records."}
         actions={
           isManager && (
             <button
@@ -183,12 +186,13 @@ export default function EmployeesPage() {
       )}
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <MetricCard label="Total Personnel" value={totalCount} icon="Users" />
-        <MetricCard label="Active Workforce" value={activeCount} icon="UserCheck" positive={true} />
+      {!loading && !error && <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <MetricCard label="Employees in scope" value={totalCount} icon="Users" />
+        <MetricCard label="Active employees" value={activeCount} icon="UserCheck" positive={true} />
         <MetricCard label="Departments" value={departments.length} icon="Building2" />
         <MetricCard label="Teams / Projects" value={teams.length} icon="FolderGit2" />
-      </div>
+      </div>}
+      {isManager && !loading && !error && <OrganizationManagement departments={departments} teams={teams} onSaved={loadData} />}
 
       {/* Search & Filter Toolbar */}
       <Card className="mb-6">
@@ -291,7 +295,7 @@ export default function EmployeesPage() {
         onSubmit={handleCreateEmployee}
         departments={departments}
         teams={teams}
-        supervisors={employees}
+        supervisors={supervisors}
       />
 
       <EditOfficialModal
@@ -304,7 +308,7 @@ export default function EmployeesPage() {
         onSubmit={handleUpdateOfficial}
         departments={departments}
         teams={teams}
-        supervisors={employees}
+        supervisors={supervisors}
       />
 
       <EditContactModal
@@ -325,6 +329,9 @@ export default function EmployeesPage() {
           setSelectedEmployee(null)
         }}
       />
+      {deactivation && <DeactivationReview key={deactivation.employee.id} employee={deactivation.employee}
+        onClose={() => { deactivation.reject?.(new Error('Deactivation cancelled')); setDeactivation(null) }}
+        onConfirm={async () => { await deactivation.action(); deactivation.resolve?.(); setDeactivation(null); showNotification('Employee deactivated'); await loadData() }} />}
     </>
   )
 }

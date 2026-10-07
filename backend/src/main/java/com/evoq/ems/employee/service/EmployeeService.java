@@ -2,6 +2,7 @@ package com.evoq.ems.employee.service;
 
 import java.util.List;
 import java.util.Optional;
+import com.evoq.ems.auth.AccountPrincipal;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -53,22 +54,14 @@ public class EmployeeService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public List<EmployeeResponse> getAllEmployees(Long departmentId, Long teamId, EmployeeStatus status, String keyword) {
-        List<Employee> list;
-        if (keyword != null && !keyword.isBlank()) {
-            list = employeeRepository.searchEmployees(keyword.trim());
-        } else if (departmentId != null) {
-            list = employeeRepository.findByDepartmentId(departmentId);
-        } else if (teamId != null) {
-            list = employeeRepository.findByTeamId(teamId);
-        } else if (status != null) {
-            list = employeeRepository.findByStatus(status);
-        } else {
-            list = employeeRepository.findAll();
-        }
+    public List<EmployeeResponse> getAllEmployees(AccountPrincipal caller, Long departmentId, Long teamId, EmployeeStatus status, String keyword) {
+        List<Employee> list = new EmployeeAccess(employeeRepository).visibleEmployees(caller);
 
         // Apply any remaining in-memory filters when combined
         return list.stream()
+                .filter(e -> keyword == null || keyword.isBlank() ||
+                        (e.getFullName() + " " + e.getEmail() + " " + e.getJobTitle()).toLowerCase(java.util.Locale.ROOT)
+                                .contains(keyword.trim().toLowerCase(java.util.Locale.ROOT)))
                 .filter(e -> departmentId == null || (e.getDepartment() != null && departmentId.equals(e.getDepartment().getId())))
                 .filter(e -> teamId == null || (e.getTeam() != null && teamId.equals(e.getTeam().getId())))
                 .filter(e -> status == null || status == e.getStatus())
@@ -88,8 +81,13 @@ public class EmployeeService {
         return getEmployeeById(account.getEmployeeId());
     }
 
-    public List<EmployeeResponse> getDirectReports(Long supervisorId) {
+    public List<EmployeeResponse> getDirectReports(AccountPrincipal caller, Long supervisorId) {
+        EmployeeAccess.requireCaller(caller);
+        if (!EmployeeAccess.manager(caller) && !caller.getEmployeeId().equals(supervisorId))
+            throw EmployeeModuleException.forbidden("You can only query your own direct reports");
+        List<Long> visible = new EmployeeAccess(employeeRepository).visibleIds(caller);
         return employeeRepository.findBySupervisorId(supervisorId).stream()
+                .filter(e -> visible.contains(e.getId()))
                 .map(this::toEmployeeResponse)
                 .toList();
     }
@@ -112,8 +110,7 @@ public class EmployeeService {
 
         Employee supervisor = null;
         if (request.supervisorId() != null) {
-            supervisor = employeeRepository.findById(request.supervisorId())
-                    .orElseThrow(() -> EmployeeModuleException.notFound("Supervisor not found with ID: " + request.supervisorId()));
+            supervisor = validSupervisor(request.supervisorId());
         }
 
         Employee employee = new Employee(
@@ -134,7 +131,7 @@ public class EmployeeService {
 
         // Provision user account if requested
         if (request.createAccount()) {
-            provisionAccount(saved.getId(), request.username(), request.password(), request.role());
+            provisionAccount(saved.getId(), request.username(), request.password(), request.role(), saved.getStatus() == EmployeeStatus.ACTIVE);
         }
 
         return toEmployeeResponse(saved);
@@ -142,7 +139,7 @@ public class EmployeeService {
 
     @Transactional
     public EmployeeResponse updateOfficialInfo(Long id, UpdateOfficialInfoRequest request) {
-        Employee employee = employeeRepository.findById(id)
+        Employee employee = employeeRepository.findLockedById(id)
                 .orElseThrow(() -> EmployeeModuleException.notFound("Employee not found with ID: " + id));
 
         Department department = departmentRepository.findById(request.departmentId())
@@ -159,10 +156,18 @@ public class EmployeeService {
             if (request.supervisorId().equals(id)) {
                 throw EmployeeModuleException.badRequest("An employee cannot be their own supervisor");
             }
-            supervisor = employeeRepository.findById(request.supervisorId())
-                    .orElseThrow(() -> EmployeeModuleException.notFound("Supervisor not found with ID: " + request.supervisorId()));
+            supervisor = validSupervisor(request.supervisorId());
         }
 
+        if (request.firstName() != null) employee.setFirstName(requiredText(request.firstName()));
+        if (request.lastName() != null) employee.setLastName(requiredText(request.lastName()));
+        if (request.email() != null) {
+            String email = requiredText(request.email()).toLowerCase(java.util.Locale.ROOT);
+            if (employeeRepository.findByEmailIgnoreCase(email).filter(e -> !id.equals(e.getId())).isPresent())
+                throw EmployeeModuleException.conflict("Employee email is already in use");
+            employee.setEmail(email);
+        }
+        if (request.hireDate() != null) employee.setHireDate(request.hireDate());
         employee.setDepartment(department);
         employee.setTeam(team);
         employee.setSupervisor(supervisor);
@@ -192,12 +197,9 @@ public class EmployeeService {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> EmployeeModuleException.notFound("Employee not found with ID: " + id));
 
-        if (request.phone() != null) {
-            employee.setPhone(request.phone().trim());
-        }
-        if (request.address() != null) {
-            employee.setAddress(request.address().trim());
-        }
+        // PUT replaces both nullable contact fields; null/blank explicitly clears them.
+        employee.setPhone(nullableText(request.phone()));
+        employee.setAddress(nullableText(request.address()));
 
         Employee updated = employeeRepository.save(employee);
         return toEmployeeResponse(updated);
@@ -205,7 +207,7 @@ public class EmployeeService {
 
     @Transactional
     public EmployeeResponse changeEmployeeStatus(Long id, EmployeeStatus status) {
-        Employee employee = employeeRepository.findById(id)
+        Employee employee = employeeRepository.findLockedById(id)
                 .orElseThrow(() -> EmployeeModuleException.notFound("Employee not found with ID: " + id));
 
         employee.setStatus(status);
@@ -217,7 +219,35 @@ public class EmployeeService {
         return toEmployeeResponse(updated);
     }
 
-    private void provisionAccount(Long employeeId, String username, String password, String roleName) {
+    private String requiredText(String value) {
+        if (value.isBlank()) throw EmployeeModuleException.badRequest("Official fields cannot be blank");
+        return value.trim();
+    }
+    private String nullableText(String value) { return value == null || value.isBlank() ? null : value.trim(); }
+
+    private Employee validSupervisor(Long id) {
+        Employee candidate = employeeRepository.findById(id)
+                .orElseThrow(() -> EmployeeModuleException.notFound("Supervisor not found"));
+        boolean eligible = candidate.getStatus() == EmployeeStatus.ACTIVE &&
+                userAccountRepository.findByEmployeeId(id).filter(a -> a.isActive() &&
+                        List.of("SUPERVISOR", "MANAGER_ADMIN").contains(a.getRole().getName())).isPresent();
+        if (!eligible) throw EmployeeModuleException.badRequest("Select an active Supervisor or Manager/Admin account");
+        return candidate;
+    }
+
+    public List<EmployeeResponse> getSupervisorCandidates() {
+        return employeeRepository.findByStatus(EmployeeStatus.ACTIVE).stream()
+                .filter(e -> userAccountRepository.findByEmployeeId(e.getId()).filter(a -> a.isActive() &&
+                        List.of("SUPERVISOR", "MANAGER_ADMIN").contains(a.getRole().getName())).isPresent())
+                .map(this::toEmployeeResponse).toList();
+    }
+
+    public EmployeeResponse getEmployeeById(AccountPrincipal caller, Long id) {
+        new EmployeeAccess(employeeRepository).requireVisible(caller, id);
+        return getEmployeeById(id);
+    }
+
+    private void provisionAccount(Long employeeId, String username, String password, String roleName, boolean active) {
         if (username == null || username.isBlank()) {
             throw EmployeeModuleException.badRequest("Username is required to create a user account");
         }
@@ -241,7 +271,7 @@ public class EmployeeService {
                 role,
                 trimmedUsername,
                 passwordEncoder.encode(password),
-                true
+                active
         );
         userAccountRepository.save(account);
     }

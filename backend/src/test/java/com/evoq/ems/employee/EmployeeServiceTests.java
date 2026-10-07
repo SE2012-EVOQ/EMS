@@ -111,7 +111,7 @@ class EmployeeServiceTests {
 
         Employee emp = new Employee(dept, null, null, "John", "Doe",
                 "john@evoq.com", null, null, LocalDate.now(), "Engineer", EmployeeStatus.ACTIVE);
-        when(employeeRepo.findById(5L)).thenReturn(Optional.of(emp));
+        when(employeeRepo.findLockedById(5L)).thenReturn(Optional.of(emp));
 
         UpdateOfficialInfoRequest request = new UpdateOfficialInfoRequest(
                 1L, null, 5L, // Supervisor ID equals Employee ID
@@ -145,7 +145,7 @@ class EmployeeServiceTests {
         Department dept = new Department("Engineering", "Software dev");
         Employee emp = new Employee(dept, null, null, "John", "Doe",
                 "john@evoq.com", null, null, LocalDate.now(), "Engineer", EmployeeStatus.ACTIVE);
-        when(employeeRepo.findById(10L)).thenReturn(Optional.of(emp));
+        when(employeeRepo.findLockedById(10L)).thenReturn(Optional.of(emp));
         when(employeeRepo.save(any(Employee.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Role role = mock(Role.class);
@@ -156,5 +156,55 @@ class EmployeeServiceTests {
 
         assertEquals(EmployeeStatus.INACTIVE, response.status());
         assertEquals(false, acc.isActive());
+    }
+
+    @Test
+    void inactiveOnboardingCreatesDisabledAccount() {
+        Department dept = new Department("Engineering", null);
+        when(deptRepo.findById(1L)).thenReturn(Optional.of(dept));
+        when(employeeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        Role role = mock(Role.class); when(role.getName()).thenReturn("EMPLOYEE");
+        when(roleRepo.findByName("EMPLOYEE")).thenReturn(Optional.of(role));
+        when(passwordEncoder.encode("secret123")).thenReturn("hash");
+        employeeService.createEmployee(new CreateEmployeeRequest(1L, null, null, "A", "B", "a@b.com", null, null,
+                LocalDate.now(), "Engineer", EmployeeStatus.INACTIVE, true, "ab", "secret123", "EMPLOYEE"));
+        org.mockito.ArgumentCaptor<UserAccount> account = org.mockito.ArgumentCaptor.forClass(UserAccount.class);
+        verify(userAccountRepo).save(account.capture());
+        assertEquals(false, account.getValue().isActive());
+    }
+
+    @Test
+    void nullAndBlankContactFieldsClearStoredValues() {
+        Employee emp = new Employee(null, null, null, "A", "B", "a@b.com", "0123", "Old address", LocalDate.now(), "Engineer", EmployeeStatus.ACTIVE);
+        when(employeeRepo.findById(10L)).thenReturn(Optional.of(emp));
+        when(employeeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var updated = employeeService.updatePersonalContact(10L, new UpdatePersonalContactRequest(null, "  "));
+        assertEquals(null, updated.phone()); assertEquals(null, updated.address());
+    }
+
+    @Test
+    void ordinaryEmployeeCannotBeSelectedAsSupervisor() {
+        when(deptRepo.findById(1L)).thenReturn(Optional.of(new Department("Engineering", null)));
+        Employee ordinary = new Employee(null, null, null, "A", "B", "a@b.com", null, null, LocalDate.now(), "Engineer", EmployeeStatus.ACTIVE);
+        when(employeeRepo.findById(9L)).thenReturn(Optional.of(ordinary));
+        assertEquals(HttpStatus.BAD_REQUEST, assertThrows(EmployeeModuleException.class, () -> employeeService.createEmployee(
+                new CreateEmployeeRequest(1L, null, 9L, "A", "B", "a@b.com", null, null, LocalDate.now(), "Engineer", EmployeeStatus.ACTIVE, false, null, null, null))).status());
+        org.mockito.Mockito.verify(employeeRepo, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void managerCanEditIdentityAndHireDateButCannotReuseAnotherEmail() {
+        Employee emp = new Employee(null, null, null, "A", "B", "a@b.com", null, null, LocalDate.now(), "Engineer", EmployeeStatus.ACTIVE);
+        when(employeeRepo.findLockedById(10L)).thenReturn(Optional.of(emp));
+        when(deptRepo.findById(1L)).thenReturn(Optional.of(new Department("Engineering", null)));
+        when(employeeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var updated = employeeService.updateOfficialInfo(10L, new UpdateOfficialInfoRequest(1L, null, null,
+                "Engineer", EmployeeStatus.ACTIVE, null, "New", "Name", "new@example.com", LocalDate.of(2025, 1, 1)));
+        assertEquals("New Name", updated.fullName()); assertEquals("new@example.com", updated.email());
+        assertEquals(LocalDate.of(2025, 1, 1), updated.hireDate());
+        Employee another = mock(Employee.class); when(another.getId()).thenReturn(12L);
+        when(employeeRepo.findByEmailIgnoreCase("taken@example.com")).thenReturn(Optional.of(another));
+        assertEquals(HttpStatus.CONFLICT, assertThrows(EmployeeModuleException.class, () -> employeeService.updateOfficialInfo(10L,
+                new UpdateOfficialInfoRequest(1L, null, null, "Engineer", null, null, null, null, "taken@example.com", null))).status());
     }
 }

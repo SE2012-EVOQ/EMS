@@ -87,7 +87,7 @@ docker compose -f deployment/compose.yml up --build -d
 
 The frontend binds only `127.0.0.1:8081` on the host; place the trusted HTTPS proxy in front of it. Backend has no host port. For a first bootstrap, place its password file in the external secret directory and use a controlled one-off backend run with the four `EMS_BOOTSTRAP_*` variables before starting the normal backend. Disable/remove these variables and delete its password file afterward. The proxy's API target is the compose service `backend:8080`; a different topology must adjust that nginx config.
 
-Container builds/compose require Docker. These files are portable templates, not proof of a deployed TLS/database environment. CI in `.github/workflows/verify.yml` provisions an ephemeral MySQL 8.4 database with fresh DDL, generates development credentials in the runner, runs backend tests/package and frontend tests/build. Its isolated no-password MySQL service is never a production configuration.
+Container builds/compose require Docker. These files are portable templates, not proof of a deployed TLS/database environment. GitHub workflows are not included. Run the backend tests/package and frontend tests/build locally with a configured MySQL database; see the root README for verification commands.
 
 ## Session/access limitations to coordinate
 

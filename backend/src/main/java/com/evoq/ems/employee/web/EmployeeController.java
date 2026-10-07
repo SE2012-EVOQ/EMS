@@ -41,8 +41,9 @@ public class EmployeeController {
             @RequestParam(required = false) Long departmentId,
             @RequestParam(required = false) Long teamId,
             @RequestParam(required = false) EmployeeStatus status,
-            @RequestParam(required = false) String search) {
-        return ResponseEntity.ok(employeeService.getAllEmployees(departmentId, teamId, status, search));
+            @RequestParam(required = false) String search,
+            @AuthenticationPrincipal AccountPrincipal principal) {
+        return ResponseEntity.ok(employeeService.getAllEmployees(principal, departmentId, teamId, status, search));
     }
 
     @GetMapping("/me")
@@ -54,15 +55,19 @@ public class EmployeeController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<EmployeeResponse> getEmployeeById(@PathVariable Long id) {
-        return ResponseEntity.ok(employeeService.getEmployeeById(id));
+    public ResponseEntity<EmployeeResponse> getEmployeeById(@PathVariable Long id, @AuthenticationPrincipal AccountPrincipal principal) {
+        return ResponseEntity.ok(employeeService.getEmployeeById(principal, id));
     }
 
     @GetMapping("/{id}/direct-reports")
     @PreAuthorize("hasAnyRole('MANAGER_ADMIN', 'SUPERVISOR')")
-    public ResponseEntity<List<EmployeeResponse>> getDirectReports(@PathVariable Long id) {
-        return ResponseEntity.ok(employeeService.getDirectReports(id));
+    public ResponseEntity<List<EmployeeResponse>> getDirectReports(@PathVariable Long id, @AuthenticationPrincipal AccountPrincipal principal) {
+        return ResponseEntity.ok(employeeService.getDirectReports(principal, id));
     }
+
+    @GetMapping("/supervisor-candidates")
+    @PreAuthorize("hasRole('MANAGER_ADMIN')")
+    public List<EmployeeResponse> supervisorCandidates() { return employeeService.getSupervisorCandidates(); }
 
     @PostMapping
     @PreAuthorize("hasRole('MANAGER_ADMIN')")

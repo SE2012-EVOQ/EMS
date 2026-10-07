@@ -22,6 +22,7 @@ export default function EditOfficialModal({
   supervisors = []
 }) {
   const [formData, setFormData] = useState({
+    firstName: '', lastName: '', email: '', hireDate: '',
     jobTitle: '',
     departmentId: '',
     teamId: '',
@@ -36,6 +37,7 @@ export default function EditOfficialModal({
   useEffect(() => {
     if (employee) {
       setFormData({
+        firstName: employee.firstName || '', lastName: employee.lastName || '', email: employee.email || '', hireDate: employee.hireDate || '',
         jobTitle: employee.jobTitle || '',
         departmentId: employee.department?.id ? String(employee.department.id) : '',
         teamId: employee.team?.id ? String(employee.team.id) : '',
@@ -57,6 +59,7 @@ export default function EditOfficialModal({
 
     try {
       const payload = {
+        firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), email: formData.email.trim(), hireDate: formData.hireDate,
         jobTitle: formData.jobTitle.trim(),
         departmentId: Number(formData.departmentId),
         teamId: formData.teamId ? Number(formData.teamId) : null,
@@ -88,6 +91,9 @@ export default function EditOfficialModal({
           </div>
         )}
 
+        <div className="grid grid-cols-2 gap-3">
+          {[['firstName', 'First name', 'text', 100], ['lastName', 'Last name', 'text', 100], ['email', 'Email', 'email', 150], ['hireDate', 'Hire date', 'date']].map(([field, label, type, max]) => <FormField key={field} label={label} required><input required type={type} maxLength={max} value={formData[field]} onChange={e => handleChange(field, e.target.value)} className="w-full rounded-xl border p-2" /></FormField>)}
+        </div>
         <FormField label="Job Title" required>
           <input
             type="text"

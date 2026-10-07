@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, Clock3, ClipboardCheck, Plus, UserRoundCheck } from 'lucide-react'
 import Card from '../../../components/common/Card'
 import PageHeader from '../../../components/common/PageHeader'
+import RequestFeedback from '../../../components/common/RequestFeedback'
+import { requestErrorMessage } from '../../../components/common/requestError'
 import { useAuth } from '../../../context/AuthContext'
 import AttendanceTable from '../components/AttendanceTable'
 import AttendanceEditor from '../components/AttendanceEditor'
@@ -29,6 +31,8 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [lookupError, setLookupError] = useState('')
+  const [setupLoading, setSetupLoading] = useState(true)
+  const [ready, setReady] = useState(false)
   const [reload, setReload] = useState(0)
   const [editor, setEditor] = useState(null)
   const [openingEditor, setOpeningEditor] = useState(false)
@@ -39,34 +43,32 @@ export default function AttendancePage() {
       const today = await attendanceService.today()
       setBusinessDate(today.date)
       setEditor({ mode: 'create' })
-    } catch (err) { setLookupError(err.message) } finally { setOpeningEditor(false) }
+    } catch (err) { setLookupError(requestErrorMessage(err, 'Attendance setup')) } finally { setOpeningEditor(false) }
   }
 
   useEffect(() => {
     let active = true
-    setLookupError('')
-    attendanceService.today().then(data => {
-      if (!active) return
-      setBusinessDate(data.date)
-      setRange(current => current.from || current.to ? current : monthRange(data.date))
-    }).catch(err => { if (active) setLookupError(err.message) })
-    if (isSupervisor) {
-      attendanceService.teams().then(data => {
+    setLookupError(''); setSetupLoading(true); setReady(false); setRows([])
+    Promise.all([attendanceService.today(), isSupervisor ? attendanceService.teams() : canManage ? attendanceService.employees() : Promise.resolve([])])
+      .then(([today, options]) => {
         if (!active) return
-        setTeams(data)
-        setTeamId(current => current || String(data[0]?.id || ''))
-      }).catch(err => { if (active) setLookupError(err.message) })
-    }
-    if (canManage) {
-      attendanceService.employees().then(data => { if (active) setEmployees(data) })
-        .catch(err => { if (active) setLookupError(err.message) })
-    }
+        setBusinessDate(today.date)
+        setRange(current => current.from || current.to ? current : monthRange(today.date))
+        if (isSupervisor) {
+          setTeams(options)
+          setTeamId(current => options.some(team => String(team.id) === current) ? current : String(options[0]?.id || ''))
+        }
+        if (canManage) setEmployees(options)
+        setReady(true)
+      }).catch(err => { if (active) setLookupError(requestErrorMessage(err, 'Attendance setup')) })
+      .finally(() => { if (active) setSetupLoading(false) })
     return () => { active = false }
   }, [isSupervisor, canManage, reload])
 
   useEffect(() => {
     let active = true
-    if (!range.from || !range.to) {
+    setRows([]); setError('')
+    if (!ready || !range.from || !range.to) {
       setLoading(false)
       return () => { active = false }
     }
@@ -88,15 +90,16 @@ export default function AttendancePage() {
       : view === 'all' ? attendanceService.all({ ...range, employeeId })
         : attendanceService.mine(range)
     request.then(data => { if (active) setRows(data) })
-      .catch(err => { if (active) { setRows([]); setError(err.message) } })
+      .catch(err => { if (active) { setRows([]); setError(requestErrorMessage(err, 'Attendance records')) } })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [view, range.from, range.to, teamId, employeeId, reload])
+  }, [ready, view, range.from, range.to, teamId, employeeId, reload])
 
   const visibleRows = useMemo(() => status === 'ALL' ? rows : rows.filter(row => row.status === status), [rows, status])
   const stats = useMemo(() => ({
     days: visibleRows.length,
-    present: visibleRows.filter(row => row.status === 'PRESENT' || row.status === 'LATE').length,
+    present: visibleRows.filter(row => row.status === 'PRESENT').length,
+    late: visibleRows.filter(row => row.status === 'LATE').length,
     absent: visibleRows.filter(row => row.status === 'ABSENT').length,
     hours: visibleRows.reduce((total, row) => total + Number(row.hours || 0), 0).toFixed(2)
   }), [visibleRows])
@@ -105,27 +108,25 @@ export default function AttendancePage() {
   if (canManage) tabs.push({ id: 'all', label: 'All records' })
 
   return <>
-    <PageHeader title="Attendance records" description="Review employee check-ins, check-outs and administrative exceptions." actions={canManage && <button type="button" disabled={openingEditor || !businessDate} onClick={recordException} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Plus className="h-4 w-4" />Record exception</button>} />
+    <PageHeader primary title="Attendance" actions={canManage && <button type="button" disabled={openingEditor || !businessDate || !ready || loading || Boolean(error || lookupError)} onClick={recordException} className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><Plus className="h-4 w-4" />Record exception</button>} />
     <div className="mb-5 flex gap-2 overflow-x-auto" role="tablist" aria-label="Attendance views">
       {tabs.map(tab => <button key={tab.id} type="button" role="tab" aria-selected={view === tab.id} onClick={() => setView(tab.id)} className={`shrink-0 rounded-full px-4 py-2.5 text-xs font-bold ${view === tab.id ? 'bg-[#1A1D1F] text-white' : 'surface border border-app-border bg-white txt'}`}>{tab.label}</button>)}
     </div>
     <Card className="mb-5">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <fieldset disabled={!ready || setupLoading} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted">From<input type="date" value={range.from} onChange={event => setRange(current => ({ ...current, from: event.target.value }))} className="mt-2 w-full rounded-xl border border-app-border bg-app-subtle px-3 py-2.5 text-xs font-semibold txt" /></label>
         <label className="block text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted">To<input type="date" value={range.to} onChange={event => setRange(current => ({ ...current, to: event.target.value }))} className="mt-2 w-full rounded-xl border border-app-border bg-app-subtle px-3 py-2.5 text-xs font-semibold txt" /></label>
         <label className="block text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted">Status<select value={status} onChange={event => setStatus(event.target.value)} className="mt-2 w-full rounded-xl border border-app-border bg-app-subtle px-3 py-2.5 text-xs font-semibold txt"><option value="ALL">All statuses</option><option value="PRESENT">Present</option><option value="LATE">Late</option><option value="ABSENT">Absent</option><option value="LEAVE">Leave</option></select></label>
         {view === 'team' ? <label className="block text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted">Team<select value={teamId} onChange={event => setTeamId(event.target.value)} className="mt-2 w-full rounded-xl border border-app-border bg-app-subtle px-3 py-2.5 text-xs font-semibold txt"><option value="">No assigned team</option>{teams.map(team => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
           : view === 'all' ? <label className="block text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted">Employee<select value={employeeId} onChange={event => setEmployeeId(event.target.value)} className="mt-2 w-full rounded-xl border border-app-border bg-app-subtle px-3 py-2.5 text-xs font-semibold txt"><option value="">All employees</option>{employees.map(employee => <option key={employee.id} value={employee.id}>{employee.name}</option>)}</select></label> : null}
-      </div>
+      </fieldset>
     </Card>
-    <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {[['Recorded days', stats.days, CalendarDays], ['Present', stats.present, UserRoundCheck], ['Absent', stats.absent, ClipboardCheck], ['Total hours', stats.hours, Clock3]].map(([label, value, Icon]) => <div key={label} className="surface rounded-[24px] border border-app-border/50 bg-white p-4 shadow-card sm:p-5"><div className="flex items-center gap-2 text-xs font-semibold text-app-muted muted"><Icon className="h-4 w-4" />{label}</div><div className="mt-3 text-2xl font-extrabold tracking-tight txt sm:text-3xl">{value}</div></div>)}
-    </div>
+    {ready && !loading && !error && !lookupError && range.from && range.to && (view !== 'team' || teamId) && <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      {[['Recorded days', stats.days, CalendarDays], ['Present records', stats.present, UserRoundCheck], ['Late records', stats.late, Clock3], ['Absent records', stats.absent, ClipboardCheck], ['Recorded hours', stats.hours, Clock3]].map(([label, value, Icon]) => <div key={label} className="surface rounded-[24px] border border-app-border/50 bg-white p-4 shadow-card sm:p-5"><div className="flex items-center gap-2 text-xs font-semibold text-app-muted muted"><Icon className="h-4 w-4" />{label}</div><div className="mt-3 text-2xl font-extrabold tracking-tight txt sm:text-3xl">{value}</div></div>)}
+    </div>}
     <Card>
-      <div className="mb-4 flex items-center justify-between gap-3"><div><h3 className="text-sm font-extrabold txt">Records</h3><p className="mt-1 text-xs text-app-muted muted">Employee check-in/out is the normal workflow. This table includes administrative exceptions.</p></div><span className="text-xs font-bold text-app-muted muted">{visibleRows.length} records</span></div>
-      {error && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-app-pink-bg px-4 py-3 text-xs text-app-pink"><span>{error}</span><button type="button" onClick={() => setReload(value => value + 1)} className="font-bold underline">Retry</button></div>}
-      {lookupError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-app-pink-bg px-4 py-3 text-xs text-app-pink"><span>{lookupError}</span><button type="button" onClick={() => setReload(value => value + 1)} className="font-bold underline">Retry</button></div>}
-      {loading ? <div role="status" className="py-12 text-center text-xs font-semibold text-app-muted muted">Loading attendance…</div> : !error && <AttendanceTable rows={visibleRows} canEdit={canManage} onEdit={record => setEditor({ mode: 'correct', record })} />}
+      <RequestFeedback error={lookupError || error} loading={setupLoading || (ready && loading)} loadingText="Loading attendance…" onRetry={() => setReload(value => value + 1)} />
+      {ready && !loading && !error && !lookupError && (range.from && range.to ? view === 'team' && !teamId ? <p className="py-6 text-sm text-app-muted">No team assigned.</p> : <AttendanceTable rows={visibleRows} canEdit={canManage} onEdit={record => setEditor({ mode: 'correct', record })} /> : <p className="py-6 text-sm text-app-muted">Choose a start and end date to view attendance.</p>)}
     </Card>
     {editor && <AttendanceEditor record={editor.record} employees={employees} businessDate={businessDate} onClose={() => setEditor(null)} onSaved={date => { setEditor(null); setView('all'); setEmployeeId(''); setStatus('ALL'); setRange(monthRange(date)); setReload(value => value + 1) }} />}
   </>

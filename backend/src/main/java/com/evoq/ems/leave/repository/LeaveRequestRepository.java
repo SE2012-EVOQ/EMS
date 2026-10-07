@@ -13,6 +13,9 @@ import java.util.Optional;
 
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
 
+    @Query("SELECT r FROM LeaveRequest r JOIN FETCH r.employee JOIN FETCH r.leaveType WHERE r.employee.id IN :ids ORDER BY r.submittedDate DESC")
+    List<LeaveRequest> findForEmployees(@Param("ids") List<Long> ids);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM LeaveRequest r WHERE r.id = :id")
     Optional<LeaveRequest> findLockedById(@Param("id") Long id);

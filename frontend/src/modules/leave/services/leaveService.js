@@ -34,3 +34,7 @@ export function rejectLeaveRequest(id) {
     method: 'POST'
   })
 }
+
+export const saveLeaveType = (id, data) => apiRequest(id ? `/leave/types/${id}` : '/leave/types', { method: id ? 'PUT' : 'POST', body: JSON.stringify(data) })
+export const getEmployeeLeaveSetup = id => apiRequest(`/leave/setup/employees/${id}`)
+export const setLeaveEntitlement = (employeeId, typeId, entitlementDays) => apiRequest(`/leave/setup/employees/${employeeId}/types/${typeId}`, { method: 'PUT', body: JSON.stringify({ entitlementDays }) })

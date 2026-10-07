@@ -50,8 +50,8 @@ public class LeaveService {
         this.people = people;
     }
 
+    @Transactional(readOnly = true)
     public LeaveOverviewResponse getMyLeave(Long employeeId) {
-        ensureLeaveSetup();
 
         List<BalanceResponse> balances = leaveBalanceRepository.findForEmployee(employeeId)
                 .stream()
@@ -66,8 +66,8 @@ public class LeaveService {
         return new LeaveOverviewResponse(balances, requests);
     }
 
+    @Transactional(readOnly = true)
     public List<LeaveTypeResponse> getTypes() {
-        ensureLeaveSetup();
 
         return leaveTypeRepository.findAll()
                 .stream()
@@ -169,7 +169,7 @@ public class LeaveService {
 
         Employee requester = request.getEmployee();
 
-        if (requester.getSupervisor() == null ||
+        if (requester.getId().equals(principal.getEmployeeId()) || requester.getSupervisor() == null ||
                 !requester.getSupervisor().getId().equals(principal.getEmployeeId())) {
             throw forbidden("Only the employee's assigned supervisor can decide this request");
         }
@@ -203,69 +203,42 @@ public class LeaveService {
         return toRequest(leaveRequestRepository.save(request));
     }
 
-    private void ensureLeaveSetup() {
-
-        createTypeIfMissing(
-                "Annual Leave",
-                "Planned annual leave"
-        );
-
-        createTypeIfMissing(
-                "Medical / Sick Leave",
-                "Leave for illness or medical reasons"
-        );
-
-        createTypeIfMissing(
-                "Casual Leave",
-                "Short personal or casual leave"
-        );
-
-        List<LeaveType> types = leaveTypeRepository.findAll();
-
-        for (Employee employee : employeeRepository.findByStatus(EmployeeStatus.ACTIVE)) {
-
-            for (LeaveType type : types) {
-
-                if (leaveBalanceRepository
-                        .findByEmployeeIdAndLeaveTypeId(
-                                employee.getId(),
-                                type.getId()
-                        )
-                        .isPresent()) {
-                    continue;
-                }
-
-                BigDecimal openingDays;
-
-                switch (type.getName()) {
-                    case "Annual Leave" ->
-                            openingDays = BigDecimal.valueOf(14);
-
-                    case "Medical / Sick Leave" ->
-                            openingDays = BigDecimal.valueOf(10);
-
-                    default ->
-                            openingDays = BigDecimal.valueOf(5);
-                }
-
-                leaveBalanceRepository.save(
-                        new LeaveBalance(
-                                employee,
-                                type,
-                                openingDays
-                        )
-                );
-            }
-        }
+    @Transactional
+    public LeaveTypeResponse saveType(Long id, TypeSetupRequest input) {
+        String name = input.name().trim();
+        if (leaveTypeRepository.findByNameIgnoreCase(name).filter(t -> !t.getId().equals(id)).isPresent())
+            throw conflict("Leave type name already exists");
+        LeaveType type = id == null ? new LeaveType(name, input.description()) : leaveTypeRepository.findById(id)
+                .orElseThrow(() -> notFound("Leave type not found"));
+        type.update(name, input.description());
+        LeaveType saved = leaveTypeRepository.save(type);
+        return new LeaveTypeResponse(saved.getId(), saved.getName(), saved.getDescription());
     }
 
-    private void createTypeIfMissing(String name, String description) {
+    @Transactional
+    public BalanceResponse setEntitlement(Long employeeId, Long typeId, EntitlementRequest input) {
+        Employee employee = employeeRepository.findLockedById(employeeId)
+                .orElseThrow(() -> notFound("Employee not found"));
+        LeaveType type = leaveTypeRepository.findById(typeId).orElseThrow(() -> notFound("Leave type not found"));
+        LeaveBalance balance = leaveBalanceRepository.findLockedForEmployeeType(employeeId, typeId)
+                .orElseGet(() -> new LeaveBalance(employee, type, BigDecimal.ZERO));
+        if (input.entitlementDays().compareTo(balance.getUsedDays()) < 0)
+            throw badRequest("Entitlement cannot be less than days already used");
+        balance.setEntitlement(input.entitlementDays());
+        return toBalance(leaveBalanceRepository.save(balance));
+    }
 
-        if (leaveTypeRepository.findByNameIgnoreCase(name).isEmpty()) {
-            leaveTypeRepository.save(
-                    new LeaveType(name, description)
-            );
-        }
+    @Transactional(readOnly = true)
+    public List<RequestResponse> reportRequests(AccountPrincipal caller) {
+        var ids = new com.evoq.ems.employee.service.EmployeeAccess(employeeRepository).visibleIds(caller);
+        return leaveRequestRepository.findForEmployees(ids).stream().map(this::toRequest).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EmployeeBalanceResponse> reportBalances(AccountPrincipal caller) {
+        var ids = new com.evoq.ems.employee.service.EmployeeAccess(employeeRepository).visibleIds(caller);
+        return leaveBalanceRepository.findForEmployees(ids).stream().map(balance -> new EmployeeBalanceResponse(
+                balance.getEmployee().getId(), balance.getEmployee().getFullName(), toBalance(balance))).toList();
     }
 
     private BalanceResponse toBalance(LeaveBalance balance) {
