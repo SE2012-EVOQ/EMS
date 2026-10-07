@@ -107,6 +107,47 @@ class AuthHttpFlowTests {
         failedLogin("inactive", "correct-password");
     }
 
+    @Test
+    void existingSessionIsRevokedAfterDeactivation() throws Exception { revokedSession("inactive"); }
+    @Test
+    void existingSessionIsRevokedAfterRoleChange() throws Exception { revokedSession("role"); }
+    @Test
+    void existingSessionIsRevokedAfterAccountDeletion() throws Exception { revokedSession("deleted"); }
+    @Test
+    void existingSessionIsRevokedAfterPasswordChange() throws Exception { revokedSession("password"); }
+
+    @Test
+    void expiredSessionWriteReturns401WithoutWeakeningLoginCsrf() throws Exception {
+        mvc.perform(post("/api/auth/change-password").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/auth/login")).andExpect(status().isForbidden());
+    }
+
+    private void revokedSession(String change) throws Exception {
+        AccountPrincipal original = principal(true, "test.manager");
+        when(users.loadUserByUsername("test.manager")).thenReturn(original);
+        MvcResult csrf = mvc.perform(get("/api/auth/csrf")).andReturn();
+        JsonNode token = mapper.readTree(csrf.getResponse().getContentAsString());
+        MockHttpSession session = (MockHttpSession) csrf.getRequest().getSession(false);
+        MvcResult login = mvc.perform(withCsrf(post("/api/auth/login").session(session)
+                .param("username", "test.manager").param("password", "correct-password"), token))
+                .andExpect(status().isOk()).andReturn();
+        session = (MockHttpSession) login.getRequest().getSession(false);
+        if (change.equals("deleted")) when(users.loadUserByUsername("test.manager")).thenThrow(new UsernameNotFoundException("deleted"));
+        else {
+            AccountPrincipal changed = mock(AccountPrincipal.class);
+            when(changed.getUserId()).thenReturn(1L); when(changed.getEmployeeId()).thenReturn(1L);
+            when(changed.isEnabled()).thenReturn(!change.equals("inactive"));
+            when(changed.getRole()).thenReturn(change.equals("role") ? "EMPLOYEE" : "MANAGER_ADMIN");
+            when(changed.getPassword()).thenReturn(change.equals("password") ? "different-hash" : original.getPassword());
+            when(users.loadUserByUsername("test.manager")).thenReturn(changed);
+        }
+        mvc.perform(post("/api/auth/change-password").session(session).contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnauthorized());
+        org.junit.jupiter.api.Assertions.assertTrue(session.isInvalid());
+        org.mockito.Mockito.verifyNoInteractions(passwords);
+    }
+
     private void failedLogin(String username, String password) throws Exception {
         MvcResult csrf = mvc.perform(get("/api/auth/csrf")).andReturn();
         JsonNode token = mapper.readTree(csrf.getResponse().getContentAsString());

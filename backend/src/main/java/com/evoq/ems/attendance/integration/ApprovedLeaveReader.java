@@ -26,5 +26,18 @@ public class ApprovedLeaveReader {
                 employeeId, java.sql.Date.valueOf(to), java.sql.Date.valueOf(from));
     }
 
+    public List<EmployeeLeave> approvedForEmployees(java.util.Collection<Long> employeeIds, LocalDate from, LocalDate to) {
+        if (employeeIds.isEmpty()) return List.of();
+        String placeholders = String.join(",", java.util.Collections.nCopies(employeeIds.size(), "?"));
+        java.util.List<Object> args = new java.util.ArrayList<>(employeeIds);
+        args.add(java.sql.Date.valueOf(to)); args.add(java.sql.Date.valueOf(from));
+        return jdbc.query("SELECT employee_id, start_date, end_date FROM leave_request WHERE status = 'APPROVED'"
+                + " AND employee_id IN (" + placeholders + ") AND start_date <= ? AND end_date >= ?",
+                (rs, row) -> new EmployeeLeave(rs.getLong("employee_id"), rs.getDate("start_date").toLocalDate(),
+                        rs.getDate("end_date").toLocalDate()), args.toArray());
+    }
+
+    public record EmployeeLeave(Long employeeId, LocalDate startDate, LocalDate endDate) { }
+
     public record LeaveConflict(LocalDate startDate, LocalDate endDate) { }
 }
