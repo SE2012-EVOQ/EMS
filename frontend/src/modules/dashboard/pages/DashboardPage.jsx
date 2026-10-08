@@ -2,17 +2,21 @@ import ModuleSummaries from '../ModuleSummaries'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../../context/AuthContext'
-import Card from '../../../components/common/Card'
 import PageHeader from '../../../components/common/PageHeader'
-import MetricCard from '../../../components/common/MetricCard'
 import RequestFeedback from '../../../components/common/RequestFeedback'
 import { requestErrorMessage } from '../../../components/common/requestError'
 import TodayAttendanceActions from '../../attendance/components/TodayAttendanceActions'
 import { ReportMetrics } from '../../attendance/reporting/AttendanceReport'
 import { reportService } from '../../attendance/reporting/reportService'
+import { hasTeamWorkspace } from '../../../app/roleAccess'
+import PersonalDashboard from '../PersonalDashboard'
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  return hasTeamWorkspace(user?.role) ? <ManagementDashboard role={user.role} /> : <PersonalDashboard />
+}
+
+function ManagementDashboard({ role }) {
   const [teams, setTeams] = useState([])
   const [teamId, setTeamId] = useState('')
   const [ready, setReady] = useState(false)
@@ -34,7 +38,7 @@ export default function DashboardPage() {
       .finally(() => { if (active) setSetupLoading(false) })
     return () => { active = false }
   }, [reload])
-  const scope = user?.role === 'MANAGER_ADMIN' ? 'ORGANIZATION' : user?.role === 'SUPERVISOR' && teamId ? 'TEAM' : 'MINE'
+  const scope = role === 'MANAGER_ADMIN' ? 'ORGANIZATION' : teamId ? 'TEAM' : 'MINE'
   useEffect(() => {
     if (!ready) return
     let active = true
@@ -54,15 +58,18 @@ export default function DashboardPage() {
   const busy = setupLoading || (ready && loading)
   const retry = () => setReload(value => value + 1)
   return <>
-    <PageHeader primary title="Dashboard" actions={<button type="button" onClick={retry} disabled={busy} className="rounded-xl border border-app-border px-4 py-2 text-xs font-bold disabled:opacity-50">Refresh dashboard</button>} />
+    <PageHeader primary title="Dashboard" actions={<button type="button" onClick={retry} disabled={busy} className="rounded-xl border border-app-border px-4 py-2 text-xs font-bold disabled:opacity-50">Refresh</button>} />
     <TodayAttendanceActions />
-    <Card className="mb-5"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-bold">{title}</h2>{scope === 'TEAM' && <label className="text-xs">Team<select aria-label="Dashboard team" className="ml-3 rounded-xl border border-app-border p-2" value={teamId} onChange={e => setTeamId(e.target.value)} disabled={!ready}>{teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}<Link to="/reports" className="text-xs font-bold underline">Open attendance reports</Link></div>
+    <section className="mb-4"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-bold">{title}</h2>{scope === 'TEAM' && <label className="text-xs">Team<select aria-label="Dashboard team" className="ml-3 rounded-xl border border-app-border p-2" value={teamId} onChange={e => setTeamId(e.target.value)} disabled={!ready}>{teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>}<Link to="/reports" className="text-xs font-bold underline">View reports</Link></div>
       {data && <p className="mt-2 text-xs text-app-muted">{data.attendance.businessDate} · {data.attendance.businessTimezone}</p>}
-      {user?.role === 'SUPERVISOR' && !teamId && ready && <p className="mt-2 text-xs text-app-muted">No team assigned. Showing your attendance.</p>}
-    </Card>
+      {role === 'SUPERVISOR' && !teamId && ready && <p className="mt-2 text-xs text-app-muted">No team assigned. Showing your attendance.</p>}
+    </section>
     <RequestFeedback error={setupError || (ready ? error : '')} loading={busy} loadingText="Loading dashboard…" onRetry={retry} />
-    {ready && !loading && !error && data && <><div className="mb-5 grid grid-cols-2 gap-3"><MetricCard label="Published shifts today" value={data.publishedShifts} icon="CalendarDays" /><MetricCard label="Open check-ins" value={data.attendance.totals.openCheckIns} icon="Clock3" /></div><ReportMetrics counts={data.attendance.totals} />
-      <p className="text-xs text-app-muted">Approved leave is counted separately; totals may overlap. {data.attendance.totals.overlapDays} leave days also have attendance records.</p></>}
-    <ModuleSummaries reload={reload} />
+    {ready && !loading && !error && data && <><ReportMetrics counts={data.attendance.totals} leading={[
+      ['Published shifts', data.publishedShifts, 'CalendarDays'],
+      ['Open check-ins', data.attendance.totals.openCheckIns, 'Clock3']
+    ]} />
+      {data.attendance.totals.overlapDays > 0 && <p className="text-xs text-app-muted">{data.attendance.totals.overlapDays} leave days also have attendance records.</p>}</>}
+    <ModuleSummaries reload={reload} role={role} />
   </>
 }

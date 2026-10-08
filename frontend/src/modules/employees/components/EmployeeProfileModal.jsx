@@ -65,7 +65,7 @@ export default function EmployeeProfileModal({
   const statusLabel = { ACTIVE: 'Active', INACTIVE: 'Inactive', SUSPENDED: 'Suspended', ON_LEAVE: 'On Leave' }[employee.status] || employee.status
 
   const footer = (
-    <div className="flex items-center justify-between w-full">
+    <div className="flex flex-wrap gap-3 items-center justify-between w-full">
       <div className="flex items-center gap-2">
         {isManager && (
           <button
@@ -107,7 +107,7 @@ export default function EmployeeProfileModal({
               onClose()
               onEditOfficial(employee)
             }}
-            className="px-5 py-2.5 rounded-full bg-[#1A1D1F] hover:bg-black text-white text-xs font-bold transition flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-full bg-[#1A1D1F] dark-primary hover:bg-black text-white text-xs font-bold transition flex items-center gap-1.5"
           >
             <Edit3 className="w-3.5 h-3.5" />
             Edit record
@@ -167,7 +167,7 @@ export default function EmployeeProfileModal({
             <div className="p-3.5 bg-app-subtle subtle rounded-2xl">
               <div className="text-[10px] text-app-muted uppercase font-extrabold tracking-wider flex items-center gap-1.5 mb-1.5">
                 <Users className="w-3.5 h-3.5 text-app-muted" />
-                Team / Current Project
+                Team / project
               </div>
               <div className="font-bold txt text-sm">{employee.team?.name || 'General / None'}</div>
             </div>
@@ -175,10 +175,10 @@ export default function EmployeeProfileModal({
             <div className="p-3.5 bg-app-subtle subtle rounded-2xl">
               <div className="text-[10px] text-app-muted uppercase font-extrabold tracking-wider flex items-center gap-1.5 mb-1.5">
                 <User className="w-3.5 h-3.5 text-app-muted" />
-                Reporting Supervisor
+                Supervisor
               </div>
               <div className="font-bold txt text-sm">
-                {employee.supervisor?.fullName || '— (Direct Report to Head)'}
+                {employee.supervisor?.fullName || 'Not assigned'}
               </div>
             </div>
 
@@ -200,15 +200,15 @@ export default function EmployeeProfileModal({
           <div className="space-y-2.5 text-xs bg-app-subtle subtle p-4 rounded-2xl">
             <div className="flex items-center gap-3">
               <Mail className="w-4 h-4 text-app-muted shrink-0" />
-              <span className="font-semibold txt">{employee.email}</span>
+              <span className="font-semibold txt break-all">{employee.email}</span>
             </div>
             <div className="flex items-center gap-3">
               <Phone className="w-4 h-4 text-app-muted shrink-0" />
-              <span className="font-semibold txt">{employee.phone || 'No phone number on record'}</span>
+              <span className="font-semibold txt">{employee.phone || 'No phone number'}</span>
             </div>
             <div className="flex items-center gap-3">
               <MapPin className="w-4 h-4 text-app-muted shrink-0" />
-              <span className="font-semibold txt">{employee.address || 'No residential address on record'}</span>
+              <span className="font-semibold txt break-words min-w-0">{employee.address || 'No address'}</span>
             </div>
           </div>
         </div>
@@ -218,7 +218,7 @@ export default function EmployeeProfileModal({
         {directReports.length > 0 && (
           <div>
             <h4 className="text-[10px] font-extrabold text-app-muted uppercase tracking-wider mb-2.5">
-              Direct Subordinates ({directReports.length})
+              Direct reports ({directReports.length})
             </h4>
             <div className="space-y-2 max-h-36 overflow-y-auto">
               {directReports.map(sub => (
