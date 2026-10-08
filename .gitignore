@@ -1,6 +1,14 @@
 # macOS
 .DS_Store
 
+# Local configuration and generated files in any module
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+target/
+
 # Frontend
 frontend/node_modules/
 frontend/dist/

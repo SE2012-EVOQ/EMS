@@ -45,7 +45,7 @@ public class FirstAdminBootstrap implements ApplicationRunner {
         if (!Files.isRegularFile(file) || Files.size(file) > 128) throw new IllegalStateException("Bootstrap password file is missing or too large");
         String password = Files.readString(file, StandardCharsets.UTF_8).strip();
         int bytes = password.getBytes(StandardCharsets.UTF_8).length;
-        if (password.length() < 16 || bytes > 72) throw new IllegalStateException("Bootstrap password must contain at least 16 characters and at most 72 UTF-8 bytes");
+        if (password.length() < 6 || bytes > 72) throw new IllegalStateException("Bootstrap password must contain at least 6 characters and at most 72 UTF-8 bytes");
         transaction.executeWithoutResult(status -> {
             setup.requireOpen();
             // Share the setup marker lock, then verify the existing role and employee.

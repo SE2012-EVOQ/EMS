@@ -3,12 +3,12 @@ import Modal from '../../../components/common/Modal'
 
 function FormField({ label, required, children }) {
   return (
-    <div className="space-y-1">
-      <label className="block text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+    <label className="block space-y-1">
+      <span className="block text-xs font-semibold text-app-muted muted">
         {label} {required && <span className="text-red-500">*</span>}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   )
 }
 
@@ -96,7 +96,7 @@ export default function EditOfficialModal({
             type="submit"
             form="official-employee-form"
             disabled={submitting}
-            className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A1D1F] hover:bg-black disabled:opacity-50 transition"
+            className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A1D1F] dark-primary hover:bg-black disabled:opacity-50 transition"
           >
             {submitting ? 'Saving...' : 'Save Changes'}
           </button>
@@ -113,7 +113,7 @@ export default function EditOfficialModal({
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[['firstName', 'First name', 'text', 100], ['lastName', 'Last name', 'text', 100], ['email', 'Email', 'email', 150], ['hireDate', 'Hire date', 'date']].map(([field, label, type, max]) => <FormField key={field} label={label} required><input required type={type} maxLength={max} value={formData[field]} onChange={e => handleChange(field, e.target.value)} className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border text-xs font-semibold txt" /></FormField>)}
+          {[['firstName', 'First name', 'text', 100], ['lastName', 'Last name', 'text', 100], ['email', 'Email', 'email', 150], ['hireDate', 'Hire date', 'date']].map(([field, label, type, max]) => <FormField key={field} label={label} required><input required type={type} maxLength={max} value={formData[field]} onChange={e => handleChange(field, e.target.value)} className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border text-xs font-semibold txt" /></FormField>)}
         </div>
         <FormField label="Job Title" required>
           <input
@@ -121,7 +121,7 @@ export default function EditOfficialModal({
             required
             value={formData.jobTitle}
             onChange={e => handleChange('jobTitle', e.target.value)}
-            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+            className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
           />
         </FormField>
 
@@ -131,7 +131,7 @@ export default function EditOfficialModal({
               required
               value={formData.departmentId}
               onChange={e => handleChange('departmentId', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="">Select Dept</option>
               {departments.map(d => (
@@ -144,7 +144,7 @@ export default function EditOfficialModal({
             <select
               value={formData.teamId}
               onChange={e => handleChange('teamId', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="">No Project</option>
               {teams.map(t => (
@@ -159,7 +159,7 @@ export default function EditOfficialModal({
             <select
               value={formData.supervisorId}
               onChange={e => handleChange('supervisorId', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="">None (Reports to Head)</option>
               {eligibleSupervisors.map(s => (
@@ -168,12 +168,12 @@ export default function EditOfficialModal({
             </select>
           </FormField>
 
-          <FormField label="Lifecycle Status" required>
+          <FormField label="Status" required>
             <select
               aria-label="Lifecycle Status"
               value={formData.status}
               onChange={e => handleChange('status', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
@@ -189,7 +189,7 @@ export default function EditOfficialModal({
             <select
               value={formData.role}
               onChange={e => handleChange('role', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="EMPLOYEE">Employee</option>
               <option value="SUPERVISOR">Supervisor</option>

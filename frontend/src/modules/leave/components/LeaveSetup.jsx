@@ -39,22 +39,22 @@ export default function LeaveSetup({ types, onSaved }) {
     catch (err) { setError(err.message || 'Leave setup failed') } finally { setBusy(false) }
   }
   const inputClass = 'block w-full rounded-xl border p-2'
-  return <Card><details><summary className="cursor-pointer font-semibold">Leave setup · Manager/Admin</summary>
-    <p className="my-4 text-sm text-app-muted">Set a total entitlement per employee and type. Used days are retained; available days equal total entitlement minus used days. No automatic grants, annual resets or accruals apply. Requests count inclusive calendar days.</p>
-    {error && <p role="alert" className="text-red-700 mb-3">{error}</p>}{message && <p role="status" className="mb-3 text-green-700">{message}</p>}
-    <form className="mb-5 grid gap-3 md:grid-cols-2" onSubmit={e => { e.preventDefault(); save(async () => { await saveLeaveType(editId, { name, description: description || null }); setEditId(''); setName(''); setDescription('') }) }}>
+  return <Card><details><summary className="cursor-pointer font-semibold">Leave setup</summary>
+    <details className="my-4 text-xs text-app-muted"><summary>How entitlements work</summary><p className="mt-2 leading-relaxed">Available days equal total entitlement minus used days. Used days are retained. There are no automatic grants, resets or accruals. Requests count calendar days, including both dates.</p></details>
+    {error && <p role="alert" className="text-app-pink mb-3">{error}</p>}{message && <p role="status" className="mb-3 text-app-green">{message}</p>}
+    <form className="mb-5 grid gap-3 md:grid-cols-2 items-end" onSubmit={e => { e.preventDefault(); save(async () => { await saveLeaveType(editId, { name, description: description || null }); setEditId(''); setName(''); setDescription('') }) }}>
       <label>Leave type<select className={inputClass} value={editId} onChange={e => { const type = types.find(t => String(t.id) === e.target.value); setEditId(e.target.value); setName(type?.name || ''); setDescription(type?.description || '') }}><option value="">Create new type</option>{types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
       <label>Name<input required maxLength={100} className={inputClass} value={name} onChange={e => setName(e.target.value)} /></label>
       <label>Description<input maxLength={255} className={inputClass} value={description} onChange={e => setDescription(e.target.value)} /></label>
-      <button disabled={busy} className="rounded-xl border p-2 disabled:opacity-50">{busy ? 'Saving…' : editId ? 'Update leave type' : 'Create leave type'}</button>
+      <button disabled={busy} className="h-10 rounded-xl border p-2 disabled:opacity-50">{busy ? 'Saving…' : editId ? 'Update leave type' : 'Create leave type'}</button>
     </form>
     <RequestFeedback loading={!employees && !peopleError} error={peopleError} onRetry={() => setReload(x => x + 1)} />
-    {employees && <form className="grid gap-3 md:grid-cols-2" onSubmit={e => { e.preventDefault(); save(() => setLeaveEntitlement(employeeId, typeId, Number(days))) }}>
+    {employees && <form className="grid gap-3 md:grid-cols-2 items-end" onSubmit={e => { e.preventDefault(); save(() => setLeaveEntitlement(employeeId, typeId, Number(days))) }}>
       <label>Employee<select required className={inputClass} value={employeeId} onChange={e => setEmployeeId(e.target.value)}><option value="">Select employee</option>{employees.map(emp => <option key={emp.id} value={emp.id}>{emp.fullName} · {emp.status}</option>)}</select></label>
       <label>Leave type<select required className={inputClass} value={typeId} onChange={e => setTypeId(e.target.value)}><option value="">Select type</option>{types.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
       {employeeId && <RequestFeedback loading={!balances && !balanceError} error={balanceError} onRetry={() => setReload(x => x + 1)} />}
-      {balances && <><label>Total entitlement / opening grant (days)<input required type="number" min="0" max="999.99" step="0.01" className={inputClass} value={days} onChange={e => setDays(e.target.value)} /></label>
-        <button disabled={busy || !employeeId || !typeId} className="rounded-xl bg-black p-2 text-white disabled:opacity-50">Save entitlement</button>
+      {balances && <><label>Total entitlement (days)<input required type="number" min="0" max="999.99" step="0.01" className={inputClass} value={days} onChange={e => setDays(e.target.value)} /></label>
+        <button disabled={busy || !employeeId || !typeId} className="h-10 rounded-xl bg-black dark-primary p-2 text-white disabled:opacity-50">Save entitlement</button>
         <div className="md:col-span-2 text-sm">{balances.length ? balances.map(b => <p key={b.id}>{b.leaveType}: {b.availableDays} available, {b.usedDays} used</p>) : <p>No balances configured. Enter an opening grant.</p>}</div></>}
     </form>}
   </details></Card>

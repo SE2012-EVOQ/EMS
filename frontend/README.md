@@ -1,44 +1,30 @@
 # EVOQ EMS Frontend
 
-React and Vite provide the shared application shell, session login, protected routing, and page structure for the four business modules.
-
-## Run locally
-
-Start MySQL and the Spring Boot backend first. From `backend/`, load your ignored `.env` with `source .env`, then run `./mvnw spring-boot:run`.
-
-In a second terminal, from `frontend/`:
+React, Vite, React Router and Tailwind CSS provide the application UI. Start MySQL and the backend using the [root README](../README.md#local-run-with-existing-data), then run from this directory:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`. The API defaults to `http://localhost:8080/api`; set `VITE_API_BASE_URL` in an ignored `frontend/.env` only if the backend uses another origin or port. Run `npm test` and `npm run build` to check the tests and production bundle.
+Open [http://localhost:5173](http://localhost:5173). `npm run build` creates `dist/`; `npm run preview` opens the built frontend and still needs the backend running.
 
-## Current behavior
-
-- Before login, the app checks the backend's first-run setup status. A fresh installation shows a first-administrator form; after creation it opens normal Login and permanently closes setup. Failed status reads show unavailable with Retry. The login page uses the real Spring Security session API.
-- Protected routes require `/api/auth/me` to return an authenticated user. Requests include the session cookie and CSRF header.
-- The account menu shows the authenticated username and database role, and provides logout and change password.
-- Employee, Leave, Attendance/Scheduling and Asset workflows use the real backend APIs. Employee sees own records; Supervisor sees self plus permitted active direct reports in their current team; Manager/Admin manages the organization. Backend authorization remains authoritative.
-- Employee management includes organization creation, active Supervisor/Manager selection, official name/email/hire-date edits, Active/Inactive onboarding, lifecycle status editing and nullable contact clearing. Inactive login accounts remain disabled. Deactivation provides an asset review and Return → Deactivate sequence with explicit outstanding-equipment warnings.
-- Manager/Admin configures Leave types and manual cumulative entitlements. Every role can submit own leave. Reads never initialize hidden default grants; errors show unavailable with Retry.
-- Supervisor and Manager/Admin Leave queues and decisions use active direct reports in the approver's current team. Manager/Admin also has an explicit Approve my leave action for own pending requests, including without a team/supervisor. Supervisor self-decisions remain unavailable. Manager organization-wide request history stays read-only; decision controls appear only in the authorized approval queue.
-- My Assets shows own equipment/history for Employee/Supervisor, retaining asset names after return or reassignment. Managers can register/edit equipment, assign/return it and select an employee or asset for history.
-- Reports connects Employee, Leave, Attendance and Asset sources, including scoped summaries/tables and CSV exports. Dashboard shows real module summaries, with independent Retry and successful empty states. The UI does not fabricate metrics or business records.
-- The SQL seed contains only the three required roles. Apply the separate `07_first_run_setup.sql` migration and use the non-seeding `local` profile to try browser setup. Opting in to `dev` with `DEV_DEMO_PASSWORD` creates reserved accounts `demo.manager`, `demo.supervisor`, and `demo.employee` and closes first-run setup. Normal onboarding can optionally provision later accounts. See the root README for setup and remaining policy decisions.
-
-## Structure
+## Source structure
 
 ```text
 src/
-├── app/                 Router, login, protected route, change password
-├── components/common/   Reusable UI elements
-├── components/layout/   Header and sidebar
-├── context/             Auth and theme state
-├── modules/             Dashboard and connected business workflows
-├── services/            Auth and shared API client
-└── styles/              Shared styles
+  main.jsx             Application entry
+  app/                 Routes, login, first setup and account pages
+  components/common/   Shared UI elements
+  components/layout/   Sidebar, account menu and application layout
+  context/             Authentication and theme state
+  modules/             Employee, Leave, Attendance, Asset, Dashboard and Reports
+  services/            Shared API, authentication and setup clients
+  styles/              Shared styles
 ```
 
-The module folders are reserved for the team members who own their business workflows. Shared API calls belong in service files, while backend authorization remains authoritative. The UI must not simulate successful business operations before their real APIs exist.
+Modules separate page components, reusable feature components, and API services. Reports combine module data through `src/modules/reports/reportSources.js`. [Module workflows](../docs/modules.md) document role permissions and business rules.
+
+The API defaults to `http://localhost:8080/api`. To change it, copy `.env.example` to `.env`, update `VITE_API_BASE_URL` and restart Vite. The backend's `FRONTEND_ORIGIN` must match the browser's exact origin.
+
+`src/services/api.js` sends session cookies, obtains CSRF tokens and handles errors. A session-expiry 401 returns to login; permission/CSRF 403 errors stay within the session. The backend enforces authorization for every request.

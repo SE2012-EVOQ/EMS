@@ -7,6 +7,7 @@ import {
   CheckCircle2
 } from 'lucide-react'
 
+import PageHeader from '../../../components/common/PageHeader'
 import Card from '../../../components/common/Card'
 import EmptyState from '../../../components/common/EmptyState'
 import { useAuth } from '../../../context/AuthContext'
@@ -116,7 +117,7 @@ export default function EmployeesPage() {
       await new Promise((resolve, reject) => setDeactivation({ employee: editingOfficialEmp,
         action: () => employeeService.updateOfficial(id, payload), resolve, reject }))
     } else await employeeService.updateOfficial(id, payload)
-    showToast('Official information updated successfully!')
+    showToast('Employee record updated.')
     loadData()
   }
 
@@ -145,7 +146,7 @@ export default function EmployeesPage() {
           <div className={`p-4 rounded-2xl shadow-xl border flex items-center gap-3 ${
             toast.isError
               ? 'bg-app-pink-bg text-app-pink border-app-pink/20'
-              : 'bg-white text-gray-900 border-app-border'
+              : 'bg-white txt border-app-border'
           }`}>
             {!toast.isError && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
             <span className="text-xs font-bold">{toast.message}</span>
@@ -154,48 +155,34 @@ export default function EmployeesPage() {
       )}
 
       {/* Directory Section Header & Add Employee Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 pb-1">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight txt">
-            Employee directory
-          </h2>
-          <p className="text-xs text-app-muted muted font-medium mt-0.5">
-            {isManager ? "Manage employees, departments and teams." : "Your profile and permitted team records."}
-          </p>
-        </div>
-
-        {isManager && (
-          <button
-            onClick={() => setCreateModalOpen(true)}
-            className="bg-[#1A1D1F] dark-primary hover:bg-black text-white px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold tracking-wide transition flex items-center gap-2 shadow-sm self-start sm:self-auto"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Add employee</span>
-          </button>
-        )}
-      </div>
+      <PageHeader primary title={isManager ? 'Employees' : 'My team'} actions={isManager && <button
+        onClick={() => setCreateModalOpen(true)} disabled={loading || Boolean(error)}
+        className="bg-[#1A1D1F] dark-primary hover:bg-black text-white px-4 py-2.5 rounded-full text-xs font-bold inline-flex items-center gap-2">
+        <UserPlus className="w-4 h-4" />Add employee
+      </button>} />
 
       {!loading && !error && <>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricCard label="Employees in scope" value={employees.length} icon="Users" />
+          <MetricCard label="Employees" value={employees.length} icon="Users" />
           <MetricCard label="Active employees" value={employees.filter(e => e.status === 'ACTIVE').length} icon="UserCheck" positive />
           <MetricCard label="Departments" value={departments.length} icon="Building2" />
-          <MetricCard label="Teams / Projects" value={teams.length} icon="FolderGit2" />
+          <MetricCard label="Teams" value={teams.length} icon="FolderGit2" />
         </div>
-        {isManager && <OrganizationManagement departments={departments} teams={teams} onSaved={loadData} />}
+        {isManager && <OrganizationManagement onSaved={loadData} />}
       </>}
 
       {/* Filter Pills & Search Bar Toolbar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 min-w-0 flex-1 overflow-x-auto pb-1">
           {filterPills.map(filter => (
             <button
               key={filter}
+              aria-pressed={selectedFilter === filter}
               onClick={() => setSelectedFilter(filter)}
               className={`px-3.5 py-2 rounded-full text-xs font-bold shrink-0 transition ${
                 selectedFilter === filter
                   ? 'bg-[#1A1D1F] dark-primary text-white shadow-sm'
-                  : 'surface bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  : 'surface bg-white border border-gray-200 txt hover:bg-gray-50'
               }`}
             >
               {filter}
@@ -210,7 +197,8 @@ export default function EmployeesPage() {
           <div className="relative flex-1 sm:w-64">
             <Search className="w-3.5 h-3.5 text-app-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
-              type="text"
+              type="search"
+              aria-label="Search employees"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search employees..."
@@ -221,7 +209,9 @@ export default function EmployeesPage() {
           <button
             onClick={loadData}
             title="Refresh directory"
-            className="w-8 h-8 rounded-full surface bg-white border border-gray-200 flex items-center justify-center text-app-muted hover:text-gray-900 transition shrink-0"
+            aria-label="Refresh directory"
+            disabled={loading}
+            className="w-10 h-10 rounded-full surface bg-white border border-gray-200 flex items-center justify-center text-app-muted hover:txt transition shrink-0"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -244,11 +234,11 @@ export default function EmployeesPage() {
         ) : filteredEmployees.length === 0 ? (
           <EmptyState
             icon="Users"
-            title="No matching employees"
+            title={searchQuery || selectedFilter !== 'All' || statusFilter !== 'ALL' ? 'No matching employees' : 'No employees yet'}
             description={
               searchQuery || selectedFilter !== 'All' || statusFilter !== 'ALL'
-                ? 'No employee records match the current filter or search criteria.'
-                : 'No employee records are available in the organization directory yet.'
+                ? 'Try another search or filter.'
+                : 'Add an employee to get started.'
             }
           />
         ) : (

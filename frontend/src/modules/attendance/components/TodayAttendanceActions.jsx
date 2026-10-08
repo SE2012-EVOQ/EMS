@@ -52,18 +52,18 @@ export default function TodayAttendanceActions({ onBusinessDate }) {
     finally { if (active.current) setWorking(null) }
   }
 
-  return <section className="surface mb-5 rounded-[24px] border border-app-border/50 bg-white p-5 shadow-card sm:p-6" aria-label="Today's attendance" aria-busy={loading}>
+  return <section className="surface mb-5 rounded-[24px] border border-app-border/50 bg-white p-4 shadow-card sm:p-5" aria-label="Today's attendance" aria-busy={loading}>
     <div className="flex flex-wrap items-start justify-between gap-4">
-      <div><div className="flex items-center gap-2 text-xs font-bold text-app-muted"><Clock3 className="h-4 w-4" />TODAY'S SHIFT</div>
+      <div><div className="flex items-center gap-2 text-xs font-bold text-app-muted"><Clock3 className="h-4 w-4" />Today’s shift</div>
         {loading ? <p role="status" className="mt-3 text-sm text-app-muted">Loading today’s attendance…</p> : today ? <>
           <h2 className="mt-2 text-xl font-extrabold txt">{today.checkInState === 'ON_LEAVE' ? 'Approved leave' : today.scheduled ? `${today.scheduledStart?.slice(0, 5)} – ${today.scheduledEnd?.slice(0, 5)}` : 'No shift assigned'}</h2>
-          <p className="mt-1 text-xs font-semibold text-app-muted">{stateLabel[today.checkInState] || 'Attendance status unavailable'} · {today.date}</p>
+          <p className="mt-1 text-xs font-semibold text-app-muted">{today.checkInState === 'NO_SCHEDULE' ? today.date : `${stateLabel[today.checkInState] || 'Attendance status unavailable'} · ${today.date}`}</p>
           {today.attendance && <p className="mt-2 text-xs text-app-muted">Check in {today.attendance.checkIn?.slice(0, 5) || '—'} · Check out {today.attendance.checkOut?.slice(0, 5) || '—'} · {Number(today.attendance.hours || 0).toFixed(2)} hours</p>}
         </> : <h2 className="mt-2 text-xl font-extrabold txt">Attendance unavailable</h2>}</div>
       <div className="flex gap-2">
         <button type="button" onClick={refresh} disabled={loading || working} aria-label="Refresh today's attendance" className="rounded-xl border border-app-border p-2.5 text-app-muted disabled:opacity-50"><RefreshCw className="h-4 w-4" /></button>
-        <button type="button" onClick={() => act('in', attendanceService.checkIn)} disabled={loading || working || !today?.canCheckIn} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogIn className="h-4 w-4" />{working === 'in' ? 'Checking in…' : 'Check in'}</button>
-        <button type="button" onClick={() => act('out', attendanceService.checkOut)} disabled={loading || working || !today?.canCheckOut} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogOut className="h-4 w-4" />{working === 'out' ? 'Checking out…' : 'Check out'}</button>
+        <button type="button" onClick={() => act('in', attendanceService.checkIn)} disabled={loading || working || !today?.canCheckIn} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] dark-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogIn className="h-4 w-4" />{working === 'in' ? 'Checking in…' : 'Check in'}</button>
+        <button type="button" onClick={() => act('out', attendanceService.checkOut)} disabled={loading || working || !today?.canCheckOut} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] dark-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"><LogOut className="h-4 w-4" />{working === 'out' ? 'Checking out…' : 'Check out'}</button>
       </div>
     </div>
     {(error || actionError) && <div className="mt-3"><RequestFeedback error={error || actionError} onRetry={refresh} /></div>}

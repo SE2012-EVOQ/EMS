@@ -4,12 +4,12 @@ import { createEmployeePayload } from './employeeForm'
 
 function FormField({ label, required, children }) {
   return (
-    <div className="space-y-1">
-      <label className="block text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
+    <label className="block space-y-1">
+      <span className="block text-xs font-semibold text-app-muted muted">
         {label} {required && <span className="text-red-500">*</span>}
-      </label>
+      </span>
       {children}
-    </div>
+    </label>
   )
 }
 
@@ -79,7 +79,7 @@ export default function CreateEmployeeModal({
             type="submit"
             form="create-employee-form"
             disabled={submitting}
-            className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A1D1F] hover:bg-black disabled:opacity-50 transition"
+            className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A1D1F] dark-primary hover:bg-black disabled:opacity-50 transition"
           >
             {submitting ? 'Creating...' : 'Create Employee'}
           </button>
@@ -87,7 +87,7 @@ export default function CreateEmployeeModal({
   )
 
   return (
-    <Modal open={open} title="Add employee" subtitle="Official employee and organization information." footer={footer} size="max-w-2xl" onClose={() => !submitting && onClose()}>
+    <Modal open={open} title="Add employee" footer={footer} size="max-w-2xl" onClose={() => !submitting && onClose()}>
       <form id="create-employee-form" onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="p-3 text-xs text-app-pink bg-app-pink-bg rounded-2xl font-semibold">
@@ -103,7 +103,7 @@ export default function CreateEmployeeModal({
               value={formData.firstName}
               onChange={e => handleChange('firstName', e.target.value)}
               placeholder="e.g. David"
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
 
@@ -114,7 +114,7 @@ export default function CreateEmployeeModal({
               value={formData.lastName}
               onChange={e => handleChange('lastName', e.target.value)}
               placeholder="e.g. Perera"
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
         </div>
@@ -127,7 +127,7 @@ export default function CreateEmployeeModal({
               value={formData.email}
               onChange={e => handleChange('email', e.target.value)}
               placeholder="david@evoq.com"
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
 
@@ -137,7 +137,7 @@ export default function CreateEmployeeModal({
               value={formData.phone}
               onChange={e => handleChange('phone', e.target.value)}
               placeholder="077 123 4567"
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
         </div>
@@ -150,7 +150,7 @@ export default function CreateEmployeeModal({
               value={formData.jobTitle}
               onChange={e => handleChange('jobTitle', e.target.value)}
               placeholder="e.g. Software Engineer"
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
 
@@ -160,7 +160,7 @@ export default function CreateEmployeeModal({
               required
               value={formData.hireDate}
               onChange={e => handleChange('hireDate', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
         </div>
@@ -171,22 +171,23 @@ export default function CreateEmployeeModal({
               required
               value={formData.departmentId}
               onChange={e => handleChange('departmentId', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
-              <option value="">Select Dept</option>
+              <option value="">{departments.length ? 'Select department' : 'No departments'}</option>
               {departments.map(d => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
+            {!departments.length && <p className="text-xs text-app-muted">Create a department in Organization management first.</p>}
           </FormField>
 
           <FormField label="Team / Project">
             <select
               value={formData.teamId}
               onChange={e => handleChange('teamId', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
-              <option value="">No Project</option>
+              <option value="">No team</option>
               {teams.map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
@@ -197,9 +198,9 @@ export default function CreateEmployeeModal({
             <select
               value={formData.supervisorId}
               onChange={e => handleChange('supervisorId', e.target.value)}
-              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+              className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
-              <option value="">None (Head)</option>
+              <option value="">None</option>
               {supervisors.map(s => (
                 <option key={s.id} value={s.id}>{s.fullName}</option>
               ))}
@@ -213,29 +214,29 @@ export default function CreateEmployeeModal({
             value={formData.address}
             onChange={e => handleChange('address', e.target.value)}
             placeholder="e.g. 123 Galle Road, Colombo"
-            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+            className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
           />
         </FormField>
 
-        <FormField label="Lifecycle Status" required>
+        <FormField label="Status" required>
           <select aria-label="Lifecycle Status" required value={formData.status} onChange={e => handleChange('status', e.target.value)}
-            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt">
+            className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt">
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
           </select>
-          <p className="text-xs text-app-muted">Inactive employees cannot log in. A login account created for them stays disabled until activation.</p>
+          <p className="text-xs text-app-muted">Inactive employees cannot log in until activated.</p>
         </FormField>
 
         {/* Login Account Section */}
         <div className="pt-2 border-t border-app-border">
-          <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-gray-800">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold txt">
             <input
               type="checkbox"
               checked={formData.createAccount}
               onChange={e => handleChange('createAccount', e.target.checked)}
               className="rounded text-blue-600 focus:ring-0"
             />
-            <span>Create System Login Account</span>
+            <span>Create login account</span>
           </label>
 
           {formData.createAccount && (
@@ -243,6 +244,7 @@ export default function CreateEmployeeModal({
               <FormField label="Username" required>
                 <input
                   type="text"
+                  autoComplete="username"
                   required={formData.createAccount}
                   value={formData.username}
                   onChange={e => handleChange('username', e.target.value)}
@@ -255,10 +257,11 @@ export default function CreateEmployeeModal({
                 <input
                   type="password"
                   required={formData.createAccount}
+                  autoComplete="new-password"
                   minLength={6}
                   value={formData.password}
                   onChange={e => handleChange('password', e.target.value)}
-                  placeholder="Min 6 chars"
+                  placeholder="At least 6 characters"
                   className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 bg-white"
                 />
               </FormField>

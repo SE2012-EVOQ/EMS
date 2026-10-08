@@ -40,7 +40,7 @@ export default function ScheduleEditor({ schedule, teamId, employees, initialPer
     const invalidHistoricalDate = entries.some(entry => entry.workDate < businessDate
       && schedule?.entries?.find(original => original.id === entry.id)?.workDate !== entry.workDate)
     if (invalidHistoricalDate) {
-      setError('New shifts cannot use a past business date. Existing historical dates may only be retained unchanged.')
+      setError('New shifts must use today or a future date. Keep historical dates unchanged.')
       return
     }
     setSaving(true); setError('')
@@ -56,11 +56,11 @@ export default function ScheduleEditor({ schedule, teamId, employees, initialPer
     } catch (err) { setError(err.message) } finally { setSaving(false) }
   }
 
-  return <Modal open onClose={() => { if (!saving) onClose() }} title={schedule ? 'Update team schedule' : 'Create team schedule'} subtitle={schedule?.status === 'PUBLISHED' ? 'Changes to this published schedule are visible to employees as soon as you save.' : 'Drafts do not reserve employee time. Conflicts with published shifts are checked when you publish.'}>
+  return <Modal open onClose={() => { if (!saving) onClose() }} title={schedule ? 'Update team schedule' : 'Create team schedule'} subtitle={schedule?.status === 'PUBLISHED' ? 'Saved changes are immediately visible to employees.' : 'Save a draft, then publish to assign shifts.'}>
     <form onSubmit={submit} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Period starts" type="date" value={periodStart} min={schedule ? undefined : businessDate} onChange={event => setPeriodStart(event.target.value)} required />
-        <FormField label="Period ends" type="date" value={periodEnd} onChange={event => setPeriodEnd(event.target.value)} required />
+        <FormField label="Period ends" type="date" value={periodEnd} min={periodStart || undefined} onChange={event => setPeriodEnd(event.target.value)} required />
       </div>
       <div className="space-y-3">
         <div className="flex items-center justify-between"><h3 className="text-xs font-extrabold txt">Schedule entries</h3><button type="button" disabled={!periodStart || !periodEnd || periodStart > periodEnd || periodEnd < businessDate} onClick={() => setEntries(current => [...current, emptyEntry(defaultEntryDate(periodStart, businessDate), employees)])} className="inline-flex items-center gap-1 text-xs font-bold txt disabled:opacity-50"><Plus className="h-3.5 w-3.5" />Add entry</button></div>
@@ -78,7 +78,7 @@ export default function ScheduleEditor({ schedule, teamId, employees, initialPer
         </div>)}
       </div>
       {error && <p role="alert" className="rounded-xl bg-app-pink-bg px-4 py-3 text-xs font-semibold text-app-pink">{error}</p>}
-      <div className="flex justify-end gap-2"><button type="button" disabled={saving} onClick={onClose} className="rounded-xl border border-app-border px-4 py-2.5 text-xs font-bold txt">Cancel</button><button type="submit" disabled={saving || !employees.length || !entries.length} className="rounded-xl bg-[#1A1D1F] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">{saving ? 'Saving…' : schedule?.status === 'PUBLISHED' ? 'Save published changes' : 'Save draft'}</button></div>
+      <div className="flex justify-end gap-2"><button type="button" disabled={saving} onClick={onClose} className="rounded-xl border border-app-border px-4 py-2.5 text-xs font-bold txt">Cancel</button><button type="submit" disabled={saving || !employees.length || !entries.length} className="rounded-xl bg-[#1A1D1F] dark-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">{saving ? 'Saving…' : schedule?.status === 'PUBLISHED' ? 'Save published changes' : 'Save draft'}</button></div>
     </form>
   </Modal>
 }

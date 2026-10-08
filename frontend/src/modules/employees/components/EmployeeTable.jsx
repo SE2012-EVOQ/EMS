@@ -29,7 +29,8 @@ export default function EmployeeTable({
   onViewProfile
 }) {
   return (
-    <div className="overflow-x-auto">
+    <>
+    <div className="hidden md:block overflow-x-auto">
       <table className="w-full min-w-[780px]">
         <thead>
           <tr className="text-left text-[10px] uppercase tracking-wider text-app-muted muted">
@@ -88,9 +89,9 @@ export default function EmployeeTable({
                 </td>
 
                 <td className="py-4 text-right pr-2">
-                  <div className="w-8 h-8 rounded-full hover:bg-app-subtle flex items-center justify-center ml-auto">
+                  <button type="button" aria-label={`View ${emp.fullName}`} onClick={event => { event.stopPropagation(); onViewProfile(emp) }} className="w-9 h-9 rounded-full hover:bg-app-subtle flex items-center justify-center ml-auto">
                     <ChevronRight className="w-4 h-4 text-app-muted" />
-                  </div>
+                  </button>
                 </td>
               </tr>
             )
@@ -98,5 +99,17 @@ export default function EmployeeTable({
         </tbody>
       </table>
     </div>
+    <div className="grid gap-3 sm:grid-cols-2 md:hidden">
+      {employees.map(emp => <button key={emp.id} type="button" onClick={() => onViewProfile(emp)}
+        aria-label={`View ${emp.fullName}`} className="w-full min-w-0 rounded-2xl border border-app-border p-4 text-left hover:bg-app-subtle">
+        <div className="flex items-start gap-3">
+          <span className="w-9 h-9 shrink-0 rounded-full bg-[#DEE8FF] avatar-soft text-[#3B5BDB] grid place-items-center text-xs font-extrabold">{getInitials(emp)}</span>
+          <div className="min-w-0 flex-1"><div className="text-sm font-bold txt break-words">{emp.fullName}</div><div className="mt-1 text-xs text-app-muted break-words">{emp.jobTitle}</div></div>
+          <ChevronRight className="w-4 h-4 text-app-muted shrink-0 mt-1" />
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><span className="text-xs text-app-muted">{emp.team?.name || emp.department?.name || 'No team'}</span><StatusBadge status={emp.status} /></div>
+      </button>)}
+    </div>
+    </>
   )
 }

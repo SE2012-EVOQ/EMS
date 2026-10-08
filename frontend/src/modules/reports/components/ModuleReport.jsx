@@ -36,9 +36,9 @@ export default function ModuleReport({ endpoint, title, dates = false, employees
       <form className="flex flex-wrap items-end gap-3" onSubmit={e => { e.preventDefault(); const params = new URLSearchParams(Object.entries(filters).filter(([,v]) => v)); setQuery(params.size ? `?${params}` : ''); setReload(x => x + 1) }}>
         {dates && <>{['from', 'to'].map(field => <label key={field}>{field === 'from' ? 'From' : 'To'}<input type="date" className="block rounded-xl border p-2" value={filters[field]} min={field === 'to' ? filters.from || undefined : undefined} onChange={e => setFilters({ ...filters, [field]: e.target.value })} /></label>)}</>}
         {chooseEmployee && <label>Employee<select className="block rounded-xl border p-2" disabled={!!choiceError} value={filters.employeeId} onChange={e => setFilters({ ...filters, employeeId: e.target.value })}><option value="">All permitted employees</option>{choices.map(c => <option key={c.id} value={c.id}>{c.fullName}</option>)}</select></label>}
-        {status && <label>Status<select className="block rounded-xl border p-2" value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>{['', 'ACTIVE', 'INACTIVE', 'SUSPENDED', 'ON_LEAVE'].map(s => <option key={s} value={s}>{s || 'All statuses'}</option>)}</select></label>}
-        <button className="rounded-xl border px-4 py-2" disabled={loading}>Refresh report</button>
-        <button type="button" className="rounded-xl border px-4 py-2" disabled={!data || loading || !!error} onClick={exportCsv}>Export CSV</button>
+        {status && <label>Status<select className="block rounded-xl border p-2" value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>{['', 'ACTIVE', 'INACTIVE', 'SUSPENDED', 'ON_LEAVE'].map(s => <option key={s} value={s}>{s ? s.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()) : 'All statuses'}</option>)}</select></label>}
+        <button className="h-10 rounded-xl border border-app-border px-4 py-2.5 text-xs font-bold" disabled={loading}>Apply filters</button>
+        <button type="button" className="h-10 rounded-xl border border-app-border px-4 py-2.5 text-xs font-bold" disabled={!data || loading || !!error} onClick={exportCsv}>Export CSV</button>
       </form>
       {data && <p className="mt-3 text-sm text-app-muted">Scope: {data.scope.replaceAll('_', ' ').toLowerCase()}</p>}
     </Card>
@@ -47,7 +47,7 @@ export default function ModuleReport({ endpoint, title, dates = false, employees
     {data && !loading && !error && <>
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3">{Object.entries(data.summary).map(([label, value]) => <Card key={label}><p className="text-sm text-app-muted">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></Card>)}</div>
       {data.tables.map(table => <Card key={table.title} className="mb-5"><h3 className="mb-4 font-bold">{table.title}</h3>
-        {!table.rows.length ? <p className="text-sm text-app-muted">No records match this view.</p> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr>{table.columns.map(c => <th key={c} className="p-2">{c}</th>)}</tr></thead><tbody>{table.rows.map((row, index) => <tr key={index} className="border-t border-app-border">{row.map((value, col) => <td key={col} className="p-2">{value || '—'}</td>)}</tr>)}</tbody></table></div>}
+        {!table.rows.length ? <p className="text-sm text-app-muted">No records match this view.</p> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr>{table.columns.map(c => <th key={c} className="p-2">{c}</th>)}</tr></thead><tbody>{table.rows.map((row, index) => <tr key={index} className="border-t border-app-border">{row.map((value, col) => <td key={col} className="p-2">{value ?? '—'}</td>)}</tr>)}</tbody></table></div>}
       </Card>)}
     </>}
   </>

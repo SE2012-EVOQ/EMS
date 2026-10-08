@@ -9,7 +9,7 @@
     }
 
     html, body { height: 100%; }
-    body { overflow: hidden; }
+    body { overflow: auto; }
     body.dark { color-scheme: dark; }
 
     * { scrollbar-width: thin; scrollbar-color: #d6d8dc transparent; }
@@ -92,7 +92,6 @@
       border-right: 1px solid #1c2128;
       box-shadow: 12px 0 38px rgba(0,0,0,.08);
     }
-    body.dark header { background: linear-gradient(180deg, rgba(15,17,21,.98) 0%, rgba(15,17,21,.82) 72%, rgba(15,17,21,0) 100%); }
 
     body.dark .surface,
     body.dark .bg-white.surface {
@@ -181,7 +180,6 @@
     body.theme-animating,
     body.theme-animating #app-shell,
     body.theme-animating #sidebar,
-    body.theme-animating header,
     body.theme-animating .surface,
     body.theme-animating .subtle,
     body.theme-animating input,
@@ -198,4 +196,39 @@
 
 @layer base {
   body { @apply bg-app-bg font-sans text-app-text antialiased; }
+}
+
+/* Shared control rhythm keeps module forms and tables visually consistent. */
+@layer base {
+  html { overflow: hidden; }
+  body { margin: 0; overflow: auto; }
+  #root { min-height: 100dvh; }
+  :where(label) { @apply text-xs font-semibold; }
+  :where(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+    min-width: 0;
+    max-width: 100%;
+    @apply rounded-xl border border-app-border bg-app-subtle px-3 py-2.5 text-xs font-medium text-app-text;
+  }
+  :where(input[type='checkbox'], input[type='radio']) { accent-color: #1a1d1f; }
+  :where(input:not([type='checkbox']):not([type='radio']), select) { height: 40px; }
+  :where(textarea) { display: block; resize: vertical; }
+  :where(table) { @apply text-xs; border-collapse: collapse; }
+  :where(th) { @apply text-xs font-semibold text-app-muted; white-space: nowrap; }
+  :where(td) { vertical-align: middle; }
+  :where(th, td) { padding: 12px; }
+  :where(thead) { border-bottom: 1px solid #efefef; }
+  :where(summary) { @apply cursor-pointer text-sm font-bold; }
+  :where(summary):focus-visible { outline: 2px solid #5a7cf7; outline-offset: 4px; border-radius: 4px; }
+}
+
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 120; transform: translateY(-160%); padding: 12px 16px; background: #1a1d1f; color: white; border-radius: 12px; font-size: 14px; }
+.skip-link:focus { transform: translateY(0); }
+.calendar-grid > .calendar-cell { min-height: 64px; }
+body.dark thead { border-color: #2a3038; }
+body.dark .text-emerald-600 { color: #71d7a1; }
+body.dark .hover\:bg-gray-50:hover { background: #22272e; }
+body.dark input[type='checkbox'], body.dark input[type='radio'] { accent-color: #91a8ff; }
+@media (max-width: 639px) {
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
+  .modal-panel { max-height: calc(100dvh - 1.5rem); }
 }

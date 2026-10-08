@@ -11,11 +11,11 @@ import { reportService } from './reportService'
 const inputClass = 'mt-2 w-full rounded-xl border border-app-border bg-app-subtle px-3 py-2.5 text-xs font-semibold txt'
 const statusLabels = { PRESENT: 'Present', LATE: 'Late', ABSENT: 'Absent', LEAVE: 'Leave' }
 const labelClass = 'block text-[10px] font-extrabold uppercase tracking-wider text-app-muted muted'
-export function ReportMetrics({ counts }) {
-  const metrics = [['Present records', counts.present, 'BadgeCheck'], ['Late records', counts.late, 'Clock3'],
+export function ReportMetrics({ counts, leading = [] }) {
+  const metrics = [...leading, ['Present records', counts.present, 'BadgeCheck'], ['Late records', counts.late, 'Clock3'],
     ['Absent records', counts.absent, 'UserRoundX'], ['Recorded leave', counts.recordedLeave, 'CalendarDays'],
     ['Approved leave days', counts.approvedLeaveDays, 'CalendarCheck'], ['Recorded hours', Number(counts.workingHours).toFixed(2), 'Clock3']]
-  return <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-3">{metrics.map(([label, value, icon]) => <MetricCard key={label} label={label} value={value} icon={icon} />)}</div>
+  return <div className={`mb-5 grid grid-cols-2 gap-3 ${leading.length ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>{metrics.map(([label, value, icon]) => <MetricCard key={label} label={label} value={value} icon={icon} />)}</div>
 }
 
 export default function AttendanceReport() {
@@ -84,7 +84,7 @@ export default function AttendanceReport() {
   const busy = setupLoading || (ready && (loading || optionsLoading))
   return <>
     <Card className="mb-5">
-      <fieldset disabled={!ready || setupLoading} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <fieldset disabled={!ready || setupLoading} className={`grid gap-4 sm:grid-cols-2 ${filters.scope === 'MINE' ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}>
         <label className={labelClass}>View<select className={inputClass} value={filters.scope} onChange={e => set('scope', e.target.value)}>
           <option value="MINE">My attendance</option>{user?.role === 'SUPERVISOR' && <option value="TEAM">My team</option>}{user?.role === 'MANAGER_ADMIN' && <><option value="TEAM">Team</option><option value="ORGANIZATION">Organization</option></>}
         </select></label>
@@ -95,7 +95,7 @@ export default function AttendanceReport() {
       </fieldset>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button type="button" onClick={() => setReload(v => v + 1)} disabled={busy} className="inline-flex items-center gap-2 rounded-xl border border-app-border px-4 py-2 text-xs font-bold"><RefreshCw className="h-4 w-4" />Refresh</button>
-        <button type="button" onClick={exportCsv} disabled={!report || busy || exporting} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"><Download className="h-4 w-4" />{exporting ? 'Exporting…' : 'Export CSV'}</button>
+        <button type="button" onClick={exportCsv} disabled={!report || busy || exporting} className="inline-flex items-center gap-2 rounded-xl bg-[#1A1D1F] dark-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-50"><Download className="h-4 w-4" />{exporting ? 'Exporting…' : 'Export CSV'}</button>
         {report && <span className="text-xs text-app-muted">As of {report.businessDate} · {report.businessTimezone}</span>}
       </div>
     </Card>
@@ -103,8 +103,7 @@ export default function AttendanceReport() {
     {ready && !busy && !error && !optionsError && !report && <p className="mb-5 text-sm text-app-muted">{filters.scope === 'TEAM' && !filters.teamId ? 'Choose a team to view attendance.' : 'Choose a start and end date to view attendance.'}</p>}
     {report && <>
       <ReportMetrics counts={report.totals} />
-      <Card className="mb-5"><p className="text-xs text-app-muted">Approved leave is counted separately; totals may overlap. {report.totals.overlapDays} leave days also have attendance records.</p>
-        <details className="mt-3 text-xs text-app-muted"><summary className="cursor-pointer font-bold">About these totals</summary><p className="mt-2">Present and Late are counted separately. Hours include recorded corrections and open check-ins. Approved leave counts calendar days in the selected range. Days without records are not counted as absent. Team reports use current membership.</p></details></Card>
+      <details className="mb-5 text-xs text-app-muted"><summary className="cursor-pointer font-bold">About these totals</summary><p className="mt-2 leading-relaxed">Approved leave is counted separately; {report.totals.overlapDays} days also have attendance records. Present and Late are counted separately. Hours include recorded corrections and open check-ins. Approved leave counts calendar days in the selected range. Days without records are not counted as absent. Team reports use current membership.</p></details>
       <Card className="mb-5"><h3 className="mb-4 text-sm font-extrabold txt">Employee summaries</h3>
         <div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead><tr>{['Employee', 'Present', 'Late', 'Absent', 'Recorded leave', 'Approved leave days', 'Hours'].map(v => <th key={v} className="whitespace-nowrap p-3 text-app-muted">{v}</th>)}</tr></thead>
           <tbody>{report.employees.map(e => <tr key={e.employeeId} className="border-t border-app-border"><td className="p-3 font-bold">{e.employeeName}</td>{[e.counts.present, e.counts.late, e.counts.absent, e.counts.recordedLeave, e.counts.approvedLeaveDays, Number(e.counts.workingHours).toFixed(2)].map((v, i) => <td key={i} className="p-3">{v}</td>)}</tr>)}</tbody></table></div>
