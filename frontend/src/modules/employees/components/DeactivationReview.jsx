@@ -23,16 +23,16 @@ export default function DeactivationReview({ employee, onClose, onConfirm }) {
     setBusy(true); setError('')
     try { await action() } catch (err) { setError(err.message || 'Action failed') } finally { setBusy(false) }
   }
-  return <Modal open title={`Review assets before deactivating ${employee.fullName}`} onClose={() => { if (!busy) onClose() }}>
-    <p className="mb-4 text-sm">Return assigned equipment, then deactivate the employee. Deactivation disables their login and retains history. Outstanding equipment does not automatically block deactivation.</p>
+  return <Modal open title="Deactivate employee" subtitle={employee.fullName} onClose={() => { if (!busy) onClose() }}>
+    <p className="mb-4 text-sm">Deactivation disables login and keeps history. Return equipment below; outstanding assets do not block deactivation.</p>
     <RequestFeedback loading={loading} error={readError} onRetry={() => setReload(x => x + 1)} />
-    {error && <p role="alert" className="mb-3 text-red-700">{error}</p>}
+    {error && <p role="alert" className="mb-3 text-app-pink">{error}</p>}
     {assignments && (assignments.length ? <ul className="mb-4 space-y-3">{assignments.map(a => <li key={a.assignmentId} className="flex items-center justify-between gap-3">
       <span>{assets.find(asset => asset.assetId === a.assetId)?.assetName || `Asset #${a.assetId}`} · assigned {a.assignedDate}</span>
       <button disabled={busy} className="rounded-xl border px-3 py-2 disabled:opacity-50" onClick={() => act(async () => { await returnAsset(a.assignmentId); setReload(x => x + 1) })}>Return</button>
     </li>)}</ul> : <p className="mb-4">No active asset assignments.</p>)}
-    {!!assignments?.length && <p role="status" className="mb-4 font-semibold text-amber-700">{assignments.length} active assignment(s) still need return.</p>}
-    <div className="flex justify-end gap-3"><button disabled={busy} onClick={onClose}>Cancel</button>
+    {!!assignments?.length && <p role="status" className="mb-4 font-semibold text-app-amber">{assignments.length} active assignment(s) still need return.</p>}
+    <div className="flex flex-wrap justify-end gap-3"><button disabled={busy} onClick={onClose}>Cancel</button>
       <button disabled={busy || loading} className="rounded-xl bg-red-600 px-4 py-2 text-white disabled:opacity-50" onClick={() => act(onConfirm)}>{busy ? 'Saving…' : readError ? 'Deactivate without asset review' : assignments?.length ? 'Deactivate with outstanding assets' : 'Deactivate employee'}</button></div>
   </Modal>
 }

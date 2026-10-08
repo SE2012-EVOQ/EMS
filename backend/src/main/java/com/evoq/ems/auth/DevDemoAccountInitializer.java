@@ -82,8 +82,8 @@ public class DevDemoAccountInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments arguments) {
-        if (password == null || password.length() < 8) {
-            throw new IllegalStateException("DEV_DEMO_PASSWORD must contain at least 8 characters in the dev profile");
+        if (password == null || password.length() < 6) {
+            throw new IllegalStateException("DEV_DEMO_PASSWORD must contain at least 6 characters in the dev profile");
         }
 
         transaction.executeWithoutResult(status -> {

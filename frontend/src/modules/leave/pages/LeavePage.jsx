@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import LeaveSetup from '../components/LeaveSetup'
 import PendingLeaveRequests from '../components/PendingLeaveRequests'
 import RequestFeedback from '../../../components/common/RequestFeedback'
+import StatusBadge from '../../../components/common/StatusBadge'
+import { fmtDate } from '../../../components/common/date'
 import Card from '../../../components/common/Card'
 import PageHeader from '../../../components/common/PageHeader'
 import { apiRequest } from '../../../services/api'
@@ -15,16 +17,7 @@ import {
   submitLeaveRequest
 } from '../services/leaveService'
 
-function formatDate(date) {
-  if (!date) return '-'
-  return new Date(`${date}T00:00:00`).toLocaleDateString()
-}
-
-function statusClass(status) {
-  if (status === 'APPROVED') return 'bg-green-100 text-green-700'
-  if (status === 'REJECTED') return 'bg-red-100 text-red-700'
-  return 'bg-yellow-100 text-yellow-700'
-}
+const formatDate = value => value ? fmtDate(value) : '—'
 
 export default function LeavePage() {
   const [user, setUser] = useState(null)
@@ -130,7 +123,7 @@ export default function LeavePage() {
         reason: form.reason || null
       })
 
-      setMessage('Leave request submitted successfully.')
+      setMessage('Leave request submitted.')
       setForm({
         leaveTypeId: '',
         startDate: '',
@@ -165,17 +158,16 @@ export default function LeavePage() {
     }
   }
 
-  if (readError) return <><PageHeader title="Leave management" /><RequestFeedback error={readError} loading={loading} onRetry={loadPage} /></>
+  if (readError) return <><PageHeader primary title="Leave" /><RequestFeedback error={readError} loading={loading} onRetry={loadPage} /></>
 
   if (loading) {
     return (
       <>
         <PageHeader
-          title="Leave management"
-          description="Leave balances, requests and decisions."
+          primary title="Leave"
         />
         <Card>
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-app-muted">
             Loading leave information...
           </div>
         </Card>
@@ -186,8 +178,7 @@ export default function LeavePage() {
   return (
     <>
       <PageHeader
-        title="Leave management"
-        description="Leave balances, requests and decisions."
+        primary title="Leave"
       />
 
       <div className="space-y-5">
@@ -197,30 +188,30 @@ export default function LeavePage() {
         }} />}
         {!overview.balances.length && <p className="text-sm text-app-muted">No leave balances configured. Ask your Manager/Admin to set your entitlement.</p>}
         {error && (
-          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div role="alert" className="rounded-xl bg-app-pink-bg px-4 py-3 text-sm text-app-pink">
             {error}
           </div>
         )}
 
         {message && (
-          <div className="rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
+          <div role="status" className="rounded-xl bg-app-green-bg px-4 py-3 text-sm text-app-green">
             {message}
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {overview.balances.map(balance => (
             <Card key={balance.id}>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-app-muted">
                 {balance.leaveType}
               </div>
-              <div className="mt-2 text-3xl font-semibold">
+              <div className="mt-2 text-3xl font-extrabold tabular-nums">
                 {balance.availableDays}
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-app-muted">
                 available days
               </div>
-              <div className="mt-3 text-sm text-gray-500">
+              <div className="mt-2 text-xs text-app-muted">
                 Used: {balance.usedDays}
               </div>
             </Card>
@@ -230,15 +221,15 @@ export default function LeavePage() {
         {user && (
           <Card>
             <h2 className="text-lg font-semibold mb-1">
-              Submit leave request
+              Request leave
             </h2>
-            <p className="text-sm text-gray-500 mt-1 mb-4">
-              {user?.role === 'MANAGER_ADMIN' ? 'Submit your leave, then approve it in Pending leave approvals.' : 'Request leave for approval by your assigned supervisor or manager.'}
+            <p className="text-sm text-app-muted mt-1 mb-4">
+              {user?.role === 'MANAGER_ADMIN' ? 'You can approve your request below.' : 'Your supervisor or manager will review your request.'}
             </p>
 
             <form
               onSubmit={handleSubmit}
-              className="grid gap-4 md:grid-cols-2"
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             >
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Leave type</span>
@@ -258,7 +249,6 @@ export default function LeavePage() {
                 </select>
               </label>
 
-              <div className="hidden md:block" />
 
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">Start date</span>
@@ -276,6 +266,7 @@ export default function LeavePage() {
                 <span className="text-sm font-medium">End date</span>
                 <input
                   type="date"
+                  min={form.startDate || undefined}
                   value={form.endDate}
                   onChange={e =>
                     setForm({ ...form, endDate: e.target.value })
@@ -284,21 +275,21 @@ export default function LeavePage() {
                 />
               </label>
 
-              <label className="md:col-span-2 flex flex-col gap-2">
+              <label className="sm:col-span-2 lg:col-span-3 flex flex-col gap-2">
                 <span className="text-sm font-medium">Reason</span>
                 <textarea
                   value={form.reason}
                   onChange={e =>
                     setForm({ ...form, reason: e.target.value })
                   }
-                  rows="3"
+                  rows="2"
                   placeholder="Optional reason"
                   className="rounded-xl border border-gray-200 px-3 py-2"
                 />
               </label>
 
-              <div className="md:col-span-2 flex items-center justify-between gap-4">
-                <div className="text-sm text-gray-500">
+              <div className="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="text-sm text-app-muted">
                   Requested days: <strong>{requestedDays}</strong>
                   {selectedBalance && (
                     <>
@@ -311,7 +302,7 @@ export default function LeavePage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-black px-5 py-2.5 text-white disabled:opacity-50"
+                  className="rounded-xl bg-black dark-primary px-5 py-2.5 text-white disabled:opacity-50"
                 >
                   {submitting ? 'Submitting...' : 'Submit request'}
                 </button>
@@ -324,13 +315,8 @@ export default function LeavePage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold">
-                {user?.role === 'EMPLOYEE'
-                  ? 'My leave history'
-                  : 'Leave requests'}
+                My leave history
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Request dates, type and current decision status.
-              </p>
             </div>
             <button
               onClick={loadPage}
@@ -341,14 +327,14 @@ export default function LeavePage() {
           </div>
 
           {overview.requests.length === 0 ? (
-            <div className="py-10 text-center text-gray-500">
+            <div className="py-10 text-center text-app-muted">
               No leave requests found.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-gray-500">
+                  <tr className="border-b text-left text-app-muted">
                     <th className="py-3 pr-4">Type</th>
                     <th className="py-3 pr-4">Start</th>
                     <th className="py-3 pr-4">End</th>
@@ -369,11 +355,7 @@ export default function LeavePage() {
                       </td>
                       <td className="py-3 pr-4">{request.days}</td>
                       <td className="py-3 pr-4">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${statusClass(request.status)}`}
-                        >
-                          {request.status}
-                        </span>
+                        <StatusBadge status={request.status} />
                       </td>
                       <td className="py-3">{request.reason || '-'}</td>
                     </tr>
@@ -395,14 +377,14 @@ export default function LeavePage() {
             </h2>
 
             {managerRequests.length === 0 ? (
-              <div className="py-8 text-center text-gray-500">
+              <div className="py-8 text-center text-app-muted">
                 No leave requests found.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b text-left text-gray-500">
+                    <tr className="border-b text-left text-app-muted">
                       <th className="py-3 pr-4">Employee</th>
                       <th className="py-3 pr-4">Type</th>
                       <th className="py-3 pr-4">Dates</th>
@@ -424,11 +406,7 @@ export default function LeavePage() {
                           {formatDate(request.endDate)}
                         </td>
                         <td className="py-3">
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${statusClass(request.status)}`}
-                          >
-                            {request.status}
-                          </span>
+                          <StatusBadge status={request.status} />
                         </td>
                       </tr>
                     ))}

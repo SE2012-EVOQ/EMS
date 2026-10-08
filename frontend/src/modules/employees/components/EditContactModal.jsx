@@ -52,10 +52,10 @@ export default function EditContactModal({
         Cancel
       </button>
       <button
-        type="button"
-        onClick={handleSubmit}
+        type="submit"
+        form="employee-contact-form"
         disabled={submitting}
-        className="px-5 py-2.5 rounded-full bg-[#1A1D1F] hover:bg-black text-white text-xs font-bold transition disabled:opacity-50"
+        className="px-5 py-2.5 rounded-full bg-[#1A1D1F] dark-primary hover:bg-black text-white text-xs font-bold transition disabled:opacity-50"
       >
         {submitting ? 'Saving...' : 'Save'}
       </button>
@@ -66,14 +66,14 @@ export default function EditContactModal({
     <Modal
       open={open}
       title="Edit contact details"
-      subtitle={`Permitted contact information for ${employee.fullName}`}
-      onClose={onClose}
+      subtitle={employee.fullName}
+      onClose={() => !submitting && onClose()}
       footer={footer}
       size="max-w-lg"
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="employee-contact-form" onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 text-xs text-app-pink bg-app-pink-bg rounded-2xl font-semibold">
+          <div role="alert" className="p-3 text-xs text-app-pink bg-app-pink-bg rounded-2xl font-semibold">
             {error}
           </div>
         )}
@@ -83,11 +83,13 @@ export default function EditContactModal({
             Phone number
           </span>
           <input
-            type="text"
+            type="tel"
+            autoComplete="tel"
+            maxLength={30}
             value={phone}
             onChange={e => setPhone(e.target.value)}
             placeholder="e.g. +94 77 123 4567"
-            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
+            className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
           />
         </label>
 
@@ -97,10 +99,12 @@ export default function EditContactModal({
           </span>
           <textarea
             rows={3}
+            autoComplete="street-address"
+            maxLength={255}
             value={address}
             onChange={e => setAddress(e.target.value)}
             placeholder="e.g. Colombo 05"
-            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt resize-none"
+            className="w-full mt-2 px-4 py-2.5 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt resize-none"
           />
         </label>
       </form>

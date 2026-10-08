@@ -12,5 +12,5 @@ public record FirstRunSetupRequest(
         @NotBlank @Size(max = 100) String jobTitle,
         @NotBlank @Pattern(regexp = "[A-Za-z0-9][A-Za-z0-9._-]{2,99}",
                 message = "Use 3–100 letters, numbers, dots, underscores or hyphens, starting with a letter or number") String username,
-        @NotBlank @Size(min = 16, max = 72) String password) {
+        @NotBlank @Size(min = 6, max = 72, message = "Use 6–72 characters") String password) {
 }

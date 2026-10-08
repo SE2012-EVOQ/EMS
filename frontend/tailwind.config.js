@@ -7,9 +7,9 @@ export default {
       colors: {
         app: {
           bg: '#F4F4F6', card: '#FFFFFF', subtle: '#F7F7F8', border: '#EFEFEF',
-          text: '#1A1D1F', muted: '#6F767E', green: '#2A9D68', 'green-bg': '#EAF7EE',
-          pink: '#E8636F', 'pink-bg': '#FDF0EE', amber: '#E4A72C', 'amber-bg': '#FFF7DF',
-          blue: '#5A7CF7', 'blue-bg': '#EEF2FF'
+          text: '#1A1D1F', muted: '#6F767E', green: '#22764F', 'green-bg': '#EAF7EE',
+          pink: '#B93E50', 'pink-bg': '#FDF0EE', amber: '#93600D', 'amber-bg': '#FFF7DF',
+          blue: '#4165D5', 'blue-bg': '#EEF2FF'
         }
       },
       boxShadow: {
