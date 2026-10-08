@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .requestCache(cache -> cache.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/health", "/api/auth/csrf", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/health", "/api/auth/csrf", "/api/auth/login", "/api/auth/setup").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
@@ -59,6 +59,7 @@ public class SecurityConfig {
                             var authentication = SecurityContextHolder.getContext().getAuthentication();
                             boolean anonymous = authentication == null || authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken;
                             HttpStatus status = anonymous && !request.getRequestURI().equals("/api/auth/login")
+                                    && !request.getRequestURI().equals("/api/auth/setup")
                                     ? HttpStatus.UNAUTHORIZED : HttpStatus.FORBIDDEN;
                             errors.write(response, status, status == HttpStatus.UNAUTHORIZED ? "Sign in required" : "Access denied", request.getRequestURI());
                         }))

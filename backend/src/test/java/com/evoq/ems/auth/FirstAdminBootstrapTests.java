@@ -18,6 +18,7 @@ class FirstAdminBootstrapTests {
     final JdbcTemplate jdbc = mock(JdbcTemplate.class);
     final PlatformTransactionManager manager = mock(PlatformTransactionManager.class);
     final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    final FirstRunSetupService setupState = mock(FirstRunSetupService.class);
     Path secret;
     @BeforeEach void setup() throws Exception {
         secret = temp.resolve("secret"); Files.writeString(secret, "test-only-long-bootstrap-password\n");
@@ -27,13 +28,14 @@ class FirstAdminBootstrapTests {
         when(jdbc.queryForList("SELECT employee_id FROM employee WHERE employee_id = ? AND status = 'ACTIVE' FOR UPDATE", Long.class, 3L)).thenReturn(List.of(3L));
     }
     FirstAdminBootstrap bootstrap(String name, Long employeeId, String path) {
-        return new FirstAdminBootstrap(jdbc, encoder, manager, name, employeeId, path);
+        return new FirstAdminBootstrap(jdbc, encoder, manager, name, employeeId, path, setupState);
     }
     @Test void optInCreatesOnlyHashedAccountForExistingActiveEmployee() throws Exception {
         bootstrap("first.admin", 3L, secret.toString()).run(new DefaultApplicationArguments());
         verify(jdbc).update(eq("INSERT INTO user_account (employee_id, role_id, username, password_hash, active) VALUES (?, ?, ?, ?, TRUE)"),
             eq(3L), eq(1L), eq("first.admin"), argThat((Object hash) -> encoder.matches("test-only-long-bootstrap-password", hash.toString())));
         verify(manager).commit(any());
+        verify(setupState).requireOpen(); verify(setupState).markCompleted();
     }
     @Test void existingAccountsRefuseBootstrapAndRollback() {
         when(jdbc.queryForObject("SELECT COUNT(*) FROM user_account", Long.class)).thenReturn(1L);

@@ -10,11 +10,29 @@ Create an external, private MySQL client option file (mode 600), containing `[cl
 MYSQL_CNF=/secure/path/mysql-setup.cnf EMS_DATABASE_NAME=evoq_ems sh deployment/init-fresh-db.sh
 ```
 
-The script creates a database without `IF NOT EXISTS`; it refuses an existing name. It reads only the table-DDL section of the finalized schema, omitting the destructive preamble, and applies the non-destructive runtime role seed. It creates no sample/demo business data. If installation fails part-way, inspect and resolve the new empty/partial installation yourself; there is no automatic drop/recreate recovery.
+The script creates a database without `IF NOT EXISTS`; it refuses an existing name. It reads only the table-DDL section of the finalized schema, omitting the destructive preamble, and applies the non-destructive runtime role seed and first-run setup migration. It creates no sample/demo business data. If installation fails part-way, inspect and resolve the new empty/partial installation yourself; there is no automatic drop/recreate recovery.
 
-**Retained database:** never run `database/01_schema.sql` or the fresh-install script against retained data. Back up first. Existing schema validation must pass. Missing runtime roles may be seeded with `database/06_runtime_roles.sql`; this inserts names without deleting or changing existing accounts. Future schema changes need a reviewed migration; none are introduced here. Demo sample/negative-test scripts are not production initialization.
+**Retained database:** never run `database/01_schema.sql` or the fresh-install script against retained data. Back up first. Existing schema validation must pass. Missing runtime roles may be seeded with `database/06_runtime_roles.sql`; this inserts names without deleting or changing existing accounts. Schema changes beyond the approved `07_first_run_setup.sql` migration need a separate reviewed migration. Demo sample/negative-test scripts are not production initialization.
 
-## First real Manager/Admin
+## Browser first-administrator setup
+
+Apply the additive migration to an existing schema using your private MySQL client configuration:
+
+```sh
+mysql --defaults-extra-file=/secure/path/mysql-setup.cnf evoq_ems < database/07_first_run_setup.sql
+```
+
+The fresh-install script applies it automatically. The migration creates only the singleton `first_run_setup` table and its marker. It does not change `database/01_schema.sql`, delete business data or reset an existing marker. If any account already exists, including an inactive or ordinary Employee account, it marks setup completed. Apply this migration before starting the updated backend; startup validates the marker. Runtime users need SELECT/UPDATE on this table, not schema-changing privileges.
+
+Start without the `dev` profile (use `local` for a blank local run, `prod` for the configured production runtime). Open the frontend. An uninitialized installation shows **Create first administrator**. Supply real name, email, hire date, department, job title, username and password (at least 16 characters, at most 72 UTF-8 bytes). The API creates/reuses the named department, creates the active Employee identity and enabled Manager/Admin account with a BCrypt hash, and marks setup completed in one transaction. It creates no team, Leave defaults or other business records. Sign in normally afterward.
+
+`GET /api/auth/setup` exposes only `{ "required": true|false }`. `POST /api/auth/setup` is available before login but requires the existing session CSRF token. The marker row is locked before checking existing accounts and creating identities, so competing submissions yield one success and a 409 conflict. Validation/persistence failures roll back all new records and leave setup open. Successful completion survives account deactivation, demotion, deletion and restarts; repeating the migration also preserves it. Existing installations never reopen setup just because an active Manager is absent. There is no public reset/recovery endpoint.
+
+Before exposing a fresh production installation, complete setup through your controlled installation access. After setup, the same endpoint rejects further creation; authentication, session validation and all role-scoped business APIs remain unchanged.
+
+## Optional operator bootstrap (controlled installation scripts)
+
+Browser setup replaces the manual process for a fresh installation. The existing opt-in operator bootstrap remains compatible for controlled scripts and uses the same permanent marker; it also refuses after completion. It is not required for the normal browser flow.
 
 The frozen schema requires every account to reference an Employee. Before the first account exists, the operator must provision the first real administrator's department and active Employee identity using the approved schema (or select an existing active identity). Use real name, email, hire date and job title, and obtain that `employee_id`. This is a one-time installation prerequisite, not a new Employee creation API or policy. Bootstrap never creates/rewrites Employee business records or leave balances.
 

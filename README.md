@@ -78,7 +78,9 @@ EMS/
 │   ├── 02_sample_data.sql
 │   ├── 03_queries.sql
 │   ├── 04_validation.sql
-│   └── 05_negative_constraint_tests.sql
+│   ├── 05_negative_constraint_tests.sql
+│   ├── 06_runtime_roles.sql
+│   └── 07_first_run_setup.sql
 │
 └── Diagrams/
     ├── Full_System/
@@ -180,13 +182,17 @@ For initial setup:
 ```bash
 mysql -u root -p < database/01_schema.sql
 mysql -u root -p < database/02_sample_data.sql
+mysql -u root -p evoq_ems < database/07_first_run_setup.sql
 ```
 
 Enter your own local MySQL password when prompted.
 `02_sample_data.sql` now inserts only the three required roles:
 `EMPLOYEE`, `SUPERVISOR`, and `MANAGER_ADMIN`. It creates no employees,
 accounts, departments, teams, leave, attendance, schedules, or assets. A
-freshly initialized database has no login account.
+freshly initialized database has no login account. The separate additive
+`07_first_run_setup.sql` migration adds a persistent setup marker without changing
+the finalized schema file. Apply it to existing databases too; it closes setup
+when any account exists and never resets an already completed installation.
 
 To verify the database:
 
@@ -204,7 +210,8 @@ database constraints after suitable test records exist.
 
 ## Database Tables
 
-The database contains 13 main tables:
+The database contains 13 main tables, plus the runtime `first_run_setup` marker
+added by the separate first-run migration:
 
 ```text
 role
@@ -313,12 +320,13 @@ source .env
 
 For a new checkout, copy `backend/.env.example` to the ignored
 `backend/.env` and replace the MySQL password with your own. The example
-also enables the explicit `dev` profile and its public demo login password:
+uses the non-seeding `local` profile. The demo password is used only if you
+explicitly switch to `dev`:
 
 ```dotenv
 export DB_USERNAME="root"
 export DB_PASSWORD="your-local-mysql-password"
-export SPRING_PROFILES_ACTIVE="dev"
+export SPRING_PROFILES_ACTIVE="local"
 export DEV_DEMO_PASSWORD="EvoqDemo2026!"
 ```
 
@@ -342,7 +350,24 @@ jdbc:mysql://localhost:3306/evoq_ems
 
 Hibernate is configured to validate the existing database schema rather than replace it.
 
-## Development sign-in
+## First administrator and development sign-in
+
+With the `local` profile and an empty installation, open
+[http://localhost:5173](http://localhost:5173). The app shows **Create first
+administrator** before Login. Enter your actual name, email, hire date, department,
+job title, username and a password of at least 16 characters (at most 72 UTF-8
+bytes). Setup creates the department, active Employee and enabled Manager/Admin
+account together, then sends you to Login. No manual identity insert or password
+file is needed.
+
+The backend permanently records completion. Account deactivation, demotion,
+deletion or restarts do not reopen setup. Both the setup API and screen close;
+competing submissions cannot create two first administrators. A failed status
+read shows unavailable with Retry rather than assuming the database is empty.
+Existing installations with any accounts use normal Login, even if no active
+Manager remains. Setup is not account recovery.
+
+For optional demo logins, explicitly use `SPRING_PROFILES_ACTIVE=dev`:
 
 The SQL initialization creates only the three required roles. When the backend
 starts with `SPRING_PROFILES_ACTIVE=dev` and `DEV_DEMO_PASSWORD` set, it creates
@@ -365,9 +390,8 @@ The example password is public and is only for local development. Use the same
 `DEV_DEMO_PASSWORD` value across your team if you want identical credentials.
 Do not enable the `dev` profile against a production database. These accounts
 let you inspect the protected app. Employee, attendance, schedule, and asset
-pages use their APIs. Dashboard and Reports now connect Attendance data; other
-module report/dashboard calculations remain with their owners. Non-dev bootstrap
-and runtime setup are documented in [deployment/README.md](deployment/README.md).
+pages use their APIs. Dashboard and Reports connect all four modules.
+First-run migration and runtime setup are documented in [deployment/README.md](deployment/README.md).
 
 Login uses a server-side Spring Security session. The browser stores only the
 HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
@@ -695,7 +719,8 @@ Explicit Manager Leave setup and inherited employee self-service for every role
 Employee/Leave/Asset permission, rollback and real MySQL concurrency tests
 Attendance reporting plus Employee/Leave/Asset summaries, reports and CSV exports
 Session revocation after account changes and central frontend expiry handling
-Opt-in first Manager/Admin bootstrap and external production configuration
+Browser first-administrator setup with permanent completion marker
+External production configuration and optional operator bootstrap
 Native/container deployment templates and local verification commands
 ```
 
@@ -758,4 +783,4 @@ git diff --check
 
 Cached sessions are revalidated against current account identity/active flag/role/password hash before endpoint authorization. Revocation or role/password changes invalidate the session and return 401. Frontend API handling clears expired authentication/CSRF state centrally; authenticated permission failures stay 403. An account change cannot undo an already-running request. Employee and Asset endpoints also enforce the role/ownership boundaries documented below.
 
-See [deployment/README.md](deployment/README.md) for the opt-in first Manager/Admin bootstrap, external secrets, `prod` profile, fresh-only non-destructive schema installation, native/container configuration and remaining owner security gaps. `ems.business-timezone` / `EMS_BUSINESS_TIMEZONE` remains configurable, default Asia/Colombo. Do not run destructive schema/sample scripts against retained data. Finalized OOAD diagrams/scenarios remain frozen and do not follow later implementation refinements automatically.
+See [deployment/README.md](deployment/README.md) for browser first-administrator setup, its additive migration, external secrets, `prod` profile, fresh-only non-destructive schema installation, native/container configuration and remaining owner security gaps. `ems.business-timezone` / `EMS_BUSINESS_TIMEZONE` remains configurable, default Asia/Colombo. Do not run destructive schema/sample scripts against retained data. Finalized OOAD diagrams/scenarios remain frozen and do not follow later implementation refinements automatically.

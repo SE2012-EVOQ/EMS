@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 import RequireAuth from './RequireAuth'
 import LoginPage from './LoginPage'
+import FirstRunSetupPage from './FirstRunSetupPage'
 import ChangePasswordPage from './ChangePasswordPage'
 import AppLayout from '../components/layout/AppLayout'
 import DashboardPage from '../modules/dashboard/pages/DashboardPage'
@@ -13,6 +14,7 @@ import ReportsPage from '../modules/reports/pages/ReportsPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/setup', element: <FirstRunSetupPage /> },
   {
     path: '/',
     element: <RequireAuth><AppLayout /></RequireAuth>,

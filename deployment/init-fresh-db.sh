@@ -10,4 +10,5 @@ mysql --defaults-extra-file="$MYSQL_CNF" --execute="CREATE DATABASE \`$EMS_DATAB
 # Read finalized table DDL only; omit its destructive DROP/CREATE/USE preamble.
 sed -n '/^CREATE TABLE role/,$p' "$EMS_REPO_ROOT/database/01_schema.sql" | mysql --defaults-extra-file="$MYSQL_CNF" "$EMS_DATABASE_NAME"
 mysql --defaults-extra-file="$MYSQL_CNF" "$EMS_DATABASE_NAME" < "$EMS_REPO_ROOT/database/06_runtime_roles.sql"
+mysql --defaults-extra-file="$MYSQL_CNF" "$EMS_DATABASE_NAME" < "$EMS_REPO_ROOT/database/07_first_run_setup.sql"
 echo 'Fresh schema and runtime roles installed. No accounts or demonstration data created.'
