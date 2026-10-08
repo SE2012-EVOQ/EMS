@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
 @Profile("dev")
+@Order(0)
 public class DevDemoAccountInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DevDemoAccountInitializer.class);
@@ -237,12 +239,7 @@ public class DevDemoAccountInitializer implements ApplicationRunner {
 
         ExistingAccount current = existing.getFirst();
         if (current.employeeId() != employeeId) {
-            jdbc.update("DELETE FROM user_account WHERE username = ?", username);
-            jdbc.update("""
-                    INSERT INTO user_account (employee_id, role_id, username, password_hash, active)
-                    VALUES (?, ?, ?, ?, TRUE)
-                    """, employeeId, roleId, username, encoder.encode(password));
-            return;
+            throw new IllegalStateException("Reserved demo username is linked to another employee: " + username);
         }
         if (current.roleId() != roleId || !current.active() || !encoder.matches(password, current.passwordHash())) {
             jdbc.update("""

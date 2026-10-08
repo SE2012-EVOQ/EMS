@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import RequestFeedback from '../components/common/RequestFeedback'
 
 export default function LoginPage() {
-  const { user, loading, login, connectionError } = useAuth()
+  const { user, loading, setupRequired, login, connectionError, refresh } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
@@ -12,7 +13,9 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (loading) return <div className="min-h-screen grid place-items-center text-sm text-gray-500">Checking your session…</div>
+  if (connectionError) return <div className="min-h-screen grid place-items-center p-6"><RequestFeedback error={connectionError} onRetry={refresh} /></div>
   if (user) return <Navigate to="/dashboard" replace />
+  if (setupRequired) return <Navigate to="/setup" replace />
 
   const submit = async event => {
     event.preventDefault()
@@ -34,6 +37,7 @@ export default function LoginPage() {
       <p className="text-[10px] uppercase tracking-[.22em] font-bold text-app-muted">EVOQ EMPLOYEE SYSTEM</p>
       <h1 className="text-3xl font-extrabold txt mt-2">Sign in</h1>
       <p className="text-sm text-app-muted mt-2">Use your assigned employee account.</p>
+      {location.state?.message && <p role="status" className="mt-4 text-sm txt">{location.state.message}</p>}
       <form onSubmit={submit} className="mt-8 space-y-4">
         <label className="block text-xs font-bold txt">Username
           <input autoComplete="username" required value={username} onChange={event => setUsername(event.target.value)}

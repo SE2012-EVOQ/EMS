@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Modal from '../../../components/common/Modal'
+import RequestFeedback from '../../../components/common/RequestFeedback'
 import StatusBadge from '../../../components/common/StatusBadge'
 import { employeeService } from '../services/employeeService'
 import { Mail, Phone, MapPin, Calendar, Building, Users, Shield, User, Edit3, UserX, UserCheck } from 'lucide-react'
@@ -36,26 +37,32 @@ export default function EmployeeProfileModal({
 }) {
   const [directReports, setDirectReports] = useState([])
   const [loadingReports, setLoadingReports] = useState(false)
+  const [reportsError, setReportsError] = useState('')
+  const [reportsReload, setReportsReload] = useState(0)
 
   const isManager = currentUser?.role === 'MANAGER_ADMIN'
   const isSelf = currentUser?.employeeId === employee?.id
   const canEditContact = isManager || isSelf
 
   useEffect(() => {
-    if (open && employee?.id) {
+    let active = true
+    setDirectReports([]); setReportsError(''); setLoadingReports(false)
+    // Only Managers may query another supervisor; Supervisors may query self.
+    if (open && employee?.id && (isManager || (currentUser?.role === 'SUPERVISOR' && isSelf))) {
       setLoadingReports(true)
       employeeService.getDirectReports(employee.id)
-        .then(reports => setDirectReports(reports || []))
-        .catch(() => setDirectReports([]))
-        .finally(() => setLoadingReports(false))
+        .then(reports => { if (active) setDirectReports(reports) })
+        .catch(err => { if (active) setReportsError(`Direct reports unavailable: ${err.message}`) })
+        .finally(() => { if (active) setLoadingReports(false) })
     }
-  }, [open, employee?.id])
+    return () => { active = false }
+  }, [open, employee?.id, isManager, isSelf, currentUser?.role, reportsReload])
 
   if (!employee) return null
 
   const code = `E${String(employee.id).padStart(3, '0')}`
   const initials = getInitials(employee)
-  const statusLabel = employee.status === 'ACTIVE' ? 'Active' : 'Inactive'
+  const statusLabel = { ACTIVE: 'Active', INACTIVE: 'Inactive', SUSPENDED: 'Suspended', ON_LEAVE: 'On Leave' }[employee.status] || employee.status
 
   const footer = (
     <div className="flex items-center justify-between w-full">
@@ -206,6 +213,7 @@ export default function EmployeeProfileModal({
           </div>
         </div>
 
+        {(loadingReports || reportsError) && <RequestFeedback loading={loadingReports} error={reportsError} onRetry={() => setReportsReload(x => x + 1)} />}
         {/* Direct Reports / Subordinates if any */}
         {directReports.length > 0 && (
           <div>
@@ -224,7 +232,7 @@ export default function EmployeeProfileModal({
                       <div className="text-[10px] text-app-muted">{sub.jobTitle}</div>
                     </div>
                   </div>
-                  <StatusBadge status={sub.status === 'ACTIVE' ? 'Active' : 'Inactive'} />
+                  <StatusBadge status={{ ACTIVE: 'Active', INACTIVE: 'Inactive', SUSPENDED: 'Suspended', ON_LEAVE: 'On Leave' }[sub.status] || sub.status} />
                 </div>
               ))}
             </div>

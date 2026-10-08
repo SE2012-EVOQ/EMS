@@ -48,7 +48,7 @@ export default function EmployeeTable({
             const teamName = emp.team?.name || 'General'
             const deptName = emp.department?.name || '—'
             const supervisorName = emp.supervisor?.fullName || '—'
-            const statusLabel = emp.status === 'ACTIVE' ? 'Active' : 'Inactive'
+            const statusLabel = { ACTIVE: 'Active', INACTIVE: 'Inactive', SUSPENDED: 'Suspended', ON_LEAVE: 'On Leave' }[emp.status] || emp.status
 
             return (
               <tr

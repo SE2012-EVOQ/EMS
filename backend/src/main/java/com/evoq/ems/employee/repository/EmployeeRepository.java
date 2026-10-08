@@ -14,6 +14,10 @@ import com.evoq.ems.employee.domain.EmployeeStatus;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM Employee e WHERE e.id = :id")
+    Optional<Employee> findLockedById(@Param("id") Long id);
+
     boolean existsByEmailIgnoreCase(String email);
 
     Optional<Employee> findByEmailIgnoreCase(String email);

@@ -78,7 +78,9 @@ EMS/
 │   ├── 02_sample_data.sql
 │   ├── 03_queries.sql
 │   ├── 04_validation.sql
-│   └── 05_negative_constraint_tests.sql
+│   ├── 05_negative_constraint_tests.sql
+│   ├── 06_runtime_roles.sql
+│   └── 07_first_run_setup.sql
 │
 └── Diagrams/
     ├── Full_System/
@@ -180,13 +182,17 @@ For initial setup:
 ```bash
 mysql -u root -p < database/01_schema.sql
 mysql -u root -p < database/02_sample_data.sql
+mysql -u root -p evoq_ems < database/07_first_run_setup.sql
 ```
 
 Enter your own local MySQL password when prompted.
 `02_sample_data.sql` now inserts only the three required roles:
 `EMPLOYEE`, `SUPERVISOR`, and `MANAGER_ADMIN`. It creates no employees,
 accounts, departments, teams, leave, attendance, schedules, or assets. A
-freshly initialized database has no login account.
+freshly initialized database has no login account. The separate additive
+`07_first_run_setup.sql` migration adds a persistent setup marker without changing
+the finalized schema file. Apply it to existing databases too; it closes setup
+when any account exists and never resets an already completed installation.
 
 To verify the database:
 
@@ -204,7 +210,8 @@ database constraints after suitable test records exist.
 
 ## Database Tables
 
-The database contains 13 main tables:
+The database contains 13 main tables, plus the runtime `first_run_setup` marker
+added by the separate first-run migration:
 
 ```text
 role
@@ -313,12 +320,13 @@ source .env
 
 For a new checkout, copy `backend/.env.example` to the ignored
 `backend/.env` and replace the MySQL password with your own. The example
-also enables the explicit `dev` profile and its public demo login password:
+uses the non-seeding `local` profile. The demo password is used only if you
+explicitly switch to `dev`:
 
 ```dotenv
 export DB_USERNAME="root"
 export DB_PASSWORD="your-local-mysql-password"
-export SPRING_PROFILES_ACTIVE="dev"
+export SPRING_PROFILES_ACTIVE="local"
 export DEV_DEMO_PASSWORD="EvoqDemo2026!"
 ```
 
@@ -342,7 +350,24 @@ jdbc:mysql://localhost:3306/evoq_ems
 
 Hibernate is configured to validate the existing database schema rather than replace it.
 
-## Development sign-in
+## First administrator and development sign-in
+
+With the `local` profile and an empty installation, open
+[http://localhost:5173](http://localhost:5173). The app shows **Create first
+administrator** before Login. Enter your actual name, email, hire date, department,
+job title, username and a password of at least 16 characters (at most 72 UTF-8
+bytes). Setup creates the department, active Employee and enabled Manager/Admin
+account together, then sends you to Login. No manual identity insert or password
+file is needed.
+
+The backend permanently records completion. Account deactivation, demotion,
+deletion or restarts do not reopen setup. Both the setup API and screen close;
+competing submissions cannot create two first administrators. A failed status
+read shows unavailable with Retry rather than assuming the database is empty.
+Existing installations with any accounts use normal Login, even if no active
+Manager remains. Setup is not account recovery.
+
+For optional demo logins, explicitly use `SPRING_PROFILES_ACTIVE=dev`:
 
 The SQL initialization creates only the three required roles. When the backend
 starts with `SPRING_PROFILES_ACTIVE=dev` and `DEV_DEMO_PASSWORD` set, it creates
@@ -365,8 +390,8 @@ The example password is public and is only for local development. Use the same
 `DEV_DEMO_PASSWORD` value across your team if you want identical credentials.
 Do not enable the `dev` profile against a production database. These accounts
 let you inspect the protected app. Employee, attendance, schedule, and asset
-pages now use their APIs; leave, dashboard, and reports still await integration.
-A legitimate first Manager/Admin bootstrap remains separate work.
+pages use their APIs. Dashboard and Reports connect all four modules.
+First-run migration and runtime setup are documented in [deployment/README.md](deployment/README.md).
 
 Login uses a server-side Spring Security session. The browser stores only the
 HTTP-only `JSESSIONID` cookie; React sends it with `credentials: include`.
@@ -595,11 +620,7 @@ Shared API functionality belongs under:
 src/services/
 ```
 
-Employee, attendance, schedule, and asset pages now load data from their APIs.
-Employee and attendance/schedule pages also provide management actions. The asset
-page currently lists records; its register, update, assign, and return actions
-are available through the API but do not yet have page controls. Leave, dashboard,
-and reports still show empty states.
+Employee, Leave, Attendance/Scheduling and Asset pages load their APIs and expose role-appropriate workflows. Manager/Admin can create departments/teams, onboard/edit employees, configure Leave types and entitlements, and register/edit/assign/return assets. Employees and Supervisors have a My Assets view; Managers can select an employee or an asset to inspect assignment history. Failed reads show unavailable/error with Retry; summaries and empty states appear only after successful reads. Dashboard and Reports connect all four modules.
 
 ---
 
@@ -693,22 +714,73 @@ Database validation scripts
 Employee and organization API with directory, onboarding, and edit UI
 Attendance and scheduling APIs with role-aware pages and workflows
 Asset register and assignment APIs (register, update, assign, return, and history)
-Asset page listing records from the API
-Authentication, employee, and attendance/scheduling tests
+Role-scoped My Assets, employee-filtered history and Manager asset controls
+Explicit Manager Leave setup and inherited employee self-service for every role
+Employee/Leave/Asset permission, rollback and real MySQL concurrency tests
+Attendance reporting plus Employee/Leave/Asset summaries, reports and CSV exports
+Session revocation after account changes and central frontend expiry handling
+Browser first-administrator setup with permanent completion marker
+External production configuration and optional operator bootstrap
+Native/container deployment templates and local verification commands
 ```
 
 Still under development:
 
 ```text
-First Manager/Admin account bootstrap
-Complete module-specific role authorization
-Leave API integration
-Asset page controls for register, update, assign, return, and assignment history
-Dashboard metrics and reports integration
-Broader integration testing, including asset workflows
-Deployment
+Client decisions on annual Leave rules, holidays, half-days, resets and accruals
+D-03 combined attendance/leave precedence and other unresolved Attendance policies
+Historical team ownership, pagination and larger-volume reporting
+Production deployment validation
 ```
 
 The frontend does not invent business records or dashboard metrics. Connected
-pages show database records or a genuine empty state; dashboard, leave, and
-reports still await their data sources.
+pages show database records or a genuine empty state. All report sources and
+Dashboard summaries use backend-authorized data; failed reads remain distinct from empty data.
+
+
+## Attendance reporting and dashboard
+
+Reports opens the Attendance source and includes Employee, Leave and Asset sources. The registry (`frontend/src/modules/reports/reportSources.js`) registers each module's report component. Employee/Leave/Asset services supply scoped summaries and tables at `GET /api/employee-reports`, `/api/leave-reports`, and `/api/asset-reports`; their shared renderer exports only the authorized response, quoting cells and neutralizing spreadsheet formulas. Attendance retains its own report/filter/CSV APIs.
+
+Attendance reports provide employee summaries and daily facts, date/team/employee filters, and an authorized CSV export. API: `GET /api/attendance-reports`, `/options`, `/csv`, `/dashboard`; scope is `MINE`, `TEAM` or `ORGANIZATION`. Employees can read only their own data. Supervisors use their current assigned team and active direct reports. Manager/Admin can filter organization data, including inactive employee records; team filters use current membership. Existing date-range validation (maximum 366-day difference) applies to JSON and CSV. Export uses the same authorization/calculation and quotes cells/neutralizes spreadsheet formulas.
+
+Present/Late/Absent/LEAVE counts reflect **stored attendance statuses**; present and late are separate. Recorded hours are summed from existing rows, preserving the existing manual/automatic cap and administrative corrections. Open rows keep their stored hours. Missing calendar-day records are not counted as absent. Approved leave is shown separately as distinct calendar dates covered in the selected range per employee, including days with no remaining shift. It does not create LEAVE attendance rows or recalculate Leave balances. Overlap counts make recorded attendance plus approved leave visible. These facts are not additive: combined leave precedence/attendance percentages are deferred until D-03 is decided. Current-membership scope is preserved pending D-06; lateness and correction/audit policies remain unchanged.
+
+Dashboard shows the backend's own today state/check-in/out, published-shift counts, open check-ins and the same attendance summaries. Employee view is own data; Supervisor uses permitted team data (own fallback if no team is assigned); Manager/Admin sees organization attendance. It refreshes every 30 seconds while visible and supports manual refresh. The Employee/organization, Leave and Asset panels show summaries from their respective report services, refresh every 30 seconds while visible, and retry independently on failure. Counts describe stored records in the displayed scope; no inferred productivity, attendance percentage or combined attendance/leave metric is introduced.
+
+## Employee, Leave and Asset workflows
+
+Employee directory/profile/report access is enforced in the backend: Employee=self; Supervisor=self plus current active direct reports in the Supervisor's assigned team; Manager/Admin=all, including inactive employees. A Supervisor cannot supply another Supervisor ID to the direct-report API. Managers can edit first/last name, email, hire date, department, team, supervisor, title, status and linked account role. Emails remain unique. Supervisor selection requires an active employee with an enabled Supervisor or Manager/Admin account. Contact PUT replaces both nullable phone/address fields; null or blank clears stored values. Employee creation offers Active/Inactive selection; the official editor retains lifecycle status selection. Creating an inactive employee creates a disabled login when account provisioning is requested. Status edits synchronize the linked account; disabling it invalidates existing sessions on their next request.
+
+Organization management appears in the Employee page for Manager/Admin and uses existing department/team creation APIs. Department workforce counts are Manager-only; other Employee pages derive department/team labels from their authorized employee records.
+
+Leave setup is explicit: Manager/Admin creates or edits types and sets each employee/type's **total cumulative entitlement**. A new balance starts with the entered opening grant; an existing balance preserves used days and sets available days to total entitlement minus used days. The grant cannot be below used days, negative, or exceed 999.99 days (the existing decimal field capacity). Increasing a grant adds capacity; reducing it never erases usage. There are no default 14/10/5-day grants, automatic yearly resets, accruals or writes on normal reads. Existing configured balances remain unchanged until a Manager explicitly updates them. Requests keep the existing inclusive calendar-day calculation and overlap/balance validation; weekend/holiday exclusions and half-day requests are not introduced. Every role can submit own requests. Assigned Supervisors and Manager/Admins can approve/reject active direct reports in their current assigned team. Manager/Admin can also approve their own pending leave while active, including without a team or supervisor; this is the explicitly approved top-level exception. Supervisor self-decisions and Manager self-rejection remain refused. `GET /api/leave/pending` returns only the caller's actionable requests; the existing `/supervisor/pending` path remains an alias. Manager organization-wide reads do not grant decision authority for unrelated employees. Decisions recheck current membership under employee locks, so a transfer or deactivation cannot reuse stale queue access. Approval uses the existing balance and future-shift coordination rules for both direct reports and Manager own leave. Requests excluded from an approval queue remain stored and visible to Manager/Admin. No automatic fallback or cross-team decision authority is introduced.
+
+APIs: `POST /api/leave/types`, `PUT /api/leave/types/{id}`, `GET /api/leave/setup/employees/{id}`, and `PUT /api/leave/setup/employees/{employeeId}/types/{typeId}` with `{ "entitlementDays": 20 }`. Setup is Manager-only. The Leave report includes request status counts, request history and current balances; date filters select requests overlapping the range and show whole-request calendar days. Current balances are explicitly independent of date filters. Employee/Leave reports use the same self/current-team/organization scope. Asset reports use own scope for Employee/Supervisor and organization or selected-employee scope for Manager/Admin.
+
+Only Manager/Admin registers, updates, assigns or returns equipment and reads arbitrary assignment histories. Employee/Supervisor inventory reads expose only their own currently assigned assets; their employee-filtered assignment endpoint exposes only their own history. Assignment responses include the current asset name even after return or reassignment, without exposing the new assignee or broadening inventory access. No historical name snapshot is stored. Asset assignment validates an active employee and the asset before mutations, locks employee then asset rows, and saves status/link in one transaction. Return and status edits serialize on the asset row; repeated returns conflict. An active assignment must be returned before manually changing status, and `ASSIGNED` is set only through assignment. Manager-entered condition statuses are supported within the existing 30-character field; only `AVAILABLE` permits assignment. No unconfirmed fixed condition taxonomy is imposed.
+
+Employee deactivation opens an asset review: return each outstanding assignment, then deactivate. It warns clearly and still allows deliberate deactivation with outstanding assets, or without a successful asset review, because no automatic deactivation-blocking rule has been agreed. The sequence retains employee and assignment history and disables login. Any mandatory asset-clearance policy requires group approval.
+
+Finalized OOAD artifacts and `database/01_schema.sql` remain frozen. Leave annual entitlement amounts/reset/accrual/holiday/half-day rules, historical ownership and unresolved Attendance policies remain decisions for the group/client. The manual cumulative-grant rule uses existing fields and requires no schema change.
+
+Run the complete checks with local MySQL configured (the integration suite creates isolated fixture rows and rolls back or cleans up them):
+
+```bash
+cd backend
+set -a
+source .env
+set +a
+./mvnw -q test
+cd ../frontend
+node --test test/*.test.mjs
+npm run build
+cd ..
+git diff --check
+```
+
+## Shared sessions and production setup
+
+Cached sessions are revalidated against current account identity/active flag/role/password hash before endpoint authorization. Revocation or role/password changes invalidate the session and return 401. Frontend API handling clears expired authentication/CSRF state centrally; authenticated permission failures stay 403. An account change cannot undo an already-running request. Employee and Asset endpoints also enforce the role/ownership boundaries documented below.
+
+See [deployment/README.md](deployment/README.md) for browser first-administrator setup, its additive migration, external secrets, `prod` profile, fresh-only non-destructive schema installation, native/container configuration and remaining owner security gaps. `ems.business-timezone` / `EMS_BUSINESS_TIMEZONE` remains configurable, default Asia/Colombo. Do not run destructive schema/sample scripts against retained data. Finalized OOAD diagrams/scenarios remain frozen and do not follow later implementation refinements automatically.

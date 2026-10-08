@@ -11,6 +11,9 @@ import Card from '../../../components/common/Card'
 import EmptyState from '../../../components/common/EmptyState'
 import { useAuth } from '../../../context/AuthContext'
 
+import OrganizationManagement from '../components/OrganizationManagement'
+import DeactivationReview from '../components/DeactivationReview'
+import MetricCard from '../../../components/common/MetricCard'
 import EmployeeTable from '../components/EmployeeTable'
 import EmployeeProfileModal from '../components/EmployeeProfileModal'
 import CreateEmployeeModal from '../components/CreateEmployeeModal'
@@ -18,12 +21,13 @@ import EditOfficialModal from '../components/EditOfficialModal'
 import EditContactModal from '../components/EditContactModal'
 import { employeeService } from '../services/employeeService'
 
-const FILTER_PILLS = ['All', 'Management', 'Vision', 'Platform', 'Inactive']
-
 export default function EmployeesPage() {
   const { user } = useAuth()
   const isManager = user?.role === 'MANAGER_ADMIN'
 
+  const [supervisors, setSupervisors] = useState([])
+  const [deactivation, setDeactivation] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('ALL')
   const [employees, setEmployees] = useState([])
   const [departments, setDepartments] = useState([])
   const [teams, setTeams] = useState([])
@@ -56,14 +60,16 @@ export default function EmployeesPage() {
     setLoading(true)
     setError(null)
     try {
-      const [empList, deptList, teamList] = await Promise.all([
+      const [empList, deptList, teamList, candidates] = await Promise.all([
         employeeService.getAll(),
-        employeeService.getDepartments().catch(() => []),
-        employeeService.getTeams().catch(() => [])
+        isManager ? employeeService.getDepartments() : Promise.resolve(null),
+        isManager ? employeeService.getTeams() : Promise.resolve(null),
+        isManager ? employeeService.getSupervisorCandidates() : Promise.resolve([])
       ])
-      setEmployees(empList || [])
-      setDepartments(deptList || [])
-      setTeams(teamList || [])
+      setEmployees(empList)
+      setDepartments(deptList || [...new Map(empList.filter(e => e.department).map(e => [e.department.id, e.department])).values()])
+      setTeams(teamList || [...new Map(empList.filter(e => e.team).map(e => [e.team.id, e.team])).values()])
+      setSupervisors(candidates)
     } catch (err) {
       setError(err.message || 'Failed to load employee directory')
     } finally {
@@ -75,7 +81,9 @@ export default function EmployeesPage() {
     loadData()
   }, [])
 
-  // Filtered employees calculation matching demo tabs
+  const filterPills = useMemo(() => ['All', ...new Set([...departments.map(d => d.name), ...teams.map(t => t.name)])], [departments, teams])
+
+  // Filter within the backend-authorized directory.
   const filteredEmployees = useMemo(() => {
     return employees.filter(emp => {
       // 1. Search keyword filter
@@ -89,35 +97,12 @@ export default function EmployeesPage() {
         if (!matchName && !matchEmail && !matchTitle && !matchCode) return false
       }
 
-      // 2. Filter Pills ('All', 'Management', 'Vision', 'Platform', 'Inactive')
-      if (selectedFilter === 'Inactive') {
-        return emp.status === 'INACTIVE'
-      }
-
-      // For All, Management, Vision, Platform, hide Inactive unless specifically filtered
-      if (emp.status === 'INACTIVE') {
-        return false
-      }
-
-      if (selectedFilter === 'Management') {
-        const dept = emp.department?.name || ''
-        const team = emp.team?.name || ''
-        return dept.includes('Management') || team.includes('Management')
-      }
-
-      if (selectedFilter === 'Vision') {
-        const team = emp.team?.name || ''
-        return team.includes('Vision')
-      }
-
-      if (selectedFilter === 'Platform') {
-        const team = emp.team?.name || ''
-        return team.includes('Platform')
-      }
+      if (statusFilter !== 'ALL' && emp.status !== statusFilter) return false
+      if (selectedFilter !== 'All' && emp.department?.name !== selectedFilter && emp.team?.name !== selectedFilter) return false
 
       return true
     })
-  }, [employees, searchQuery, selectedFilter])
+  }, [employees, searchQuery, selectedFilter, statusFilter])
 
   // Handlers for Employee Actions
   const handleCreateEmployee = async (payload) => {
@@ -127,8 +112,11 @@ export default function EmployeesPage() {
   }
 
   const handleUpdateOfficial = async (id, payload) => {
-    await employeeService.updateOfficial(id, payload)
-    showToast('Employee record updated.')
+    if (payload.status === 'INACTIVE' && editingOfficialEmp.status !== 'INACTIVE') {
+      await new Promise((resolve, reject) => setDeactivation({ employee: editingOfficialEmp,
+        action: () => employeeService.updateOfficial(id, payload), resolve, reject }))
+    } else await employeeService.updateOfficial(id, payload)
+    showToast('Official information updated successfully!')
     loadData()
   }
 
@@ -139,21 +127,14 @@ export default function EmployeesPage() {
   }
 
   const handleToggleStatus = async (employee) => {
-    const isCurrentlyActive = employee.status === 'ACTIVE'
-    const newStatus = isCurrentlyActive ? 'INACTIVE' : 'ACTIVE'
-    const confirmMsg = isCurrentlyActive
-      ? `Deactivate ${employee.fullName}? Historical records will be retained.`
-      : `Re-activate ${employee.fullName}?`
-
-    if (window.confirm(confirmMsg)) {
-      try {
-        await employeeService.changeStatus(employee.id, newStatus)
-        showToast(isCurrentlyActive ? 'Employee deactivated; history retained.' : 'Employee activated.')
-        loadData()
-      } catch (err) {
-        showToast(err.message || 'Status change failed', true)
-      }
+    if (employee.status === 'ACTIVE') {
+      setDeactivation({ employee, action: () => employeeService.changeStatus(employee.id, 'INACTIVE') })
+      return
     }
+    try {
+      await employeeService.changeStatus(employee.id, 'ACTIVE')
+      showToast('Employee activated'); await loadData()
+    } catch (err) { showToast(err.message || 'Status change failed', true) }
   }
 
   return (
@@ -179,7 +160,7 @@ export default function EmployeesPage() {
             Employee directory
           </h2>
           <p className="text-xs text-app-muted muted font-medium mt-0.5">
-            Maintain official employee and organization records.
+            {isManager ? "Manage employees, departments and teams." : "Your profile and permitted team records."}
           </p>
         </div>
 
@@ -194,10 +175,20 @@ export default function EmployeesPage() {
         )}
       </div>
 
+      {!loading && !error && <>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <MetricCard label="Employees in scope" value={employees.length} icon="Users" />
+          <MetricCard label="Active employees" value={employees.filter(e => e.status === 'ACTIVE').length} icon="UserCheck" positive />
+          <MetricCard label="Departments" value={departments.length} icon="Building2" />
+          <MetricCard label="Teams / Projects" value={teams.length} icon="FolderGit2" />
+        </div>
+        {isManager && <OrganizationManagement departments={departments} teams={teams} onSaved={loadData} />}
+      </>}
+
       {/* Filter Pills & Search Bar Toolbar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {FILTER_PILLS.map(filter => (
+          {filterPills.map(filter => (
             <button
               key={filter}
               onClick={() => setSelectedFilter(filter)}
@@ -213,6 +204,9 @@ export default function EmployeesPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <select aria-label="Employee status filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-full surface bg-white border border-app-border px-3 py-2 text-xs">
+            <option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="SUSPENDED">Suspended</option><option value="ON_LEAVE">On Leave</option>
+          </select>
           <div className="relative flex-1 sm:w-64">
             <Search className="w-3.5 h-3.5 text-app-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -252,7 +246,7 @@ export default function EmployeesPage() {
             icon="Users"
             title="No matching employees"
             description={
-              searchQuery || selectedFilter !== 'All'
+              searchQuery || selectedFilter !== 'All' || statusFilter !== 'ALL'
                 ? 'No employee records match the current filter or search criteria.'
                 : 'No employee records are available in the organization directory yet.'
             }
@@ -277,7 +271,7 @@ export default function EmployeesPage() {
         onSubmit={handleCreateEmployee}
         departments={departments}
         teams={teams}
-        supervisors={employees}
+        supervisors={supervisors}
       />
 
       <EditOfficialModal
@@ -290,7 +284,7 @@ export default function EmployeesPage() {
         onSubmit={handleUpdateOfficial}
         departments={departments}
         teams={teams}
-        supervisors={employees}
+        supervisors={supervisors}
       />
 
       <EditContactModal
@@ -321,6 +315,9 @@ export default function EmployeesPage() {
         }}
         onToggleStatus={handleToggleStatus}
       />
+      {deactivation && <DeactivationReview key={deactivation.employee.id} employee={deactivation.employee}
+        onClose={() => { deactivation.reject?.(new Error('Deactivation cancelled')); setDeactivation(null) }}
+        onConfirm={async () => { await deactivation.action(); deactivation.resolve?.(); setDeactivation(null); showToast('Employee deactivated'); await loadData() }} />}
     </div>
   )
 }

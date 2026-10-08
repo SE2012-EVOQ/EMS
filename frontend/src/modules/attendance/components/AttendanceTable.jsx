@@ -7,7 +7,7 @@ const displayTime = value => value ? value.slice(0, 5) : '—'
 const displayStatus = value => value ? value[0] + value.slice(1).toLowerCase() : '—'
 
 export default function AttendanceTable({ rows = [], canEdit = false, onEdit }) {
-  if (!rows.length) return <EmptyState icon="ClipboardList" title="No attendance records found" description="Try another date range or filter. New records will appear here when entered." />
+  if (!rows.length) return <EmptyState icon="ClipboardList" title="No attendance records" description="Try another date range or status." />
 
   return <><div className="hidden overflow-x-auto md:block">
     <table className="w-full min-w-[720px]">

@@ -30,11 +30,13 @@ public class OrganizationController {
     }
 
     @GetMapping("/departments")
+    @PreAuthorize("hasRole('MANAGER_ADMIN')")
     public ResponseEntity<List<DepartmentDto>> getDepartments() {
         return ResponseEntity.ok(organizationService.getAllDepartments());
     }
 
     @GetMapping("/departments/{id}")
+    @PreAuthorize("hasRole('MANAGER_ADMIN')")
     public ResponseEntity<DepartmentDto> getDepartment(@PathVariable Long id) {
         return ResponseEntity.ok(organizationService.getDepartmentById(id));
     }

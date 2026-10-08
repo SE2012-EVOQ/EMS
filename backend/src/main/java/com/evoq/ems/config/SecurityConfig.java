@@ -3,6 +3,9 @@ package com.evoq.ems.config;
 import java.util.List;
 
 import com.evoq.ems.auth.AccountPrincipal;
+import com.evoq.ems.auth.SessionAccountValidationFilter;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.evoq.ems.auth.AuthUserResponse;
 import com.evoq.ems.auth.DatabaseUserDetailsService;
 import com.evoq.ems.common.ApiErrorWriter;
@@ -40,19 +43,26 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(new HttpSessionCsrfTokenRepository())
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+                .addFilterBefore(new SessionAccountValidationFilter(users, errors), CsrfFilter.class)
                 .authenticationProvider(provider)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .requestCache(cache -> cache.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/health", "/api/auth/csrf", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/health", "/api/auth/csrf", "/api/auth/login", "/api/auth/setup").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) -> errors.write(
                                 response, HttpStatus.UNAUTHORIZED, "Sign in required", request.getRequestURI()))
-                        .accessDeniedHandler((request, response, exception) -> errors.write(
-                                response, HttpStatus.FORBIDDEN, "Access denied", request.getRequestURI())))
+                        .accessDeniedHandler((request, response, exception) -> {
+                            var authentication = SecurityContextHolder.getContext().getAuthentication();
+                            boolean anonymous = authentication == null || authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken;
+                            HttpStatus status = anonymous && !request.getRequestURI().equals("/api/auth/login")
+                                    && !request.getRequestURI().equals("/api/auth/setup")
+                                    ? HttpStatus.UNAUTHORIZED : HttpStatus.FORBIDDEN;
+                            errors.write(response, status, status == HttpStatus.UNAUTHORIZED ? "Sign in required" : "Access denied", request.getRequestURI());
+                        }))
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/auth/login")
                         .successHandler((request, response, authentication) -> {
