@@ -8,6 +8,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -18,19 +19,22 @@ import org.springframework.transaction.support.TransactionTemplate;
 /** Opt-in operator bootstrap only; no web registration or embedded credentials. */
 @Component
 @Profile("!dev")
+@Order(10)
 @ConditionalOnProperty(name = "ems.bootstrap.enabled", havingValue = "true")
 public class FirstAdminBootstrap implements ApplicationRunner {
     private final JdbcTemplate jdbc;
     private final PasswordEncoder encoder;
     private final TransactionTemplate transaction;
     private final String username, passwordFile;
+    private final FirstRunSetupService setup;
     private final Long employeeId;
     public FirstAdminBootstrap(JdbcTemplate jdbc, PasswordEncoder encoder, PlatformTransactionManager manager,
             @Value("${ems.bootstrap.username:}") String username,
             @Value("${ems.bootstrap.employee-id:0}") Long employeeId,
-            @Value("${ems.bootstrap.password-file:}") String passwordFile) {
+            @Value("${ems.bootstrap.password-file:}") String passwordFile, FirstRunSetupService setup) {
         this.jdbc = jdbc; this.encoder = encoder; this.username = username; this.employeeId = employeeId;
         this.passwordFile = passwordFile; this.transaction = new TransactionTemplate(manager);
+        this.setup = setup;
         this.transaction.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
     @Override
@@ -43,7 +47,8 @@ public class FirstAdminBootstrap implements ApplicationRunner {
         int bytes = password.getBytes(StandardCharsets.UTF_8).length;
         if (password.length() < 16 || bytes > 72) throw new IllegalStateException("Bootstrap password must contain at least 16 characters and at most 72 UTF-8 bytes");
         transaction.executeWithoutResult(status -> {
-            // Serialize bootstrap across instances without any new schema objects.
+            setup.requireOpen();
+            // Share the setup marker lock, then verify the existing role and employee.
             var roles = jdbc.queryForList("SELECT role_id FROM role WHERE name = 'MANAGER_ADMIN' FOR UPDATE", Long.class);
             if (roles.size() != 1) throw new IllegalStateException("Seed runtime roles before bootstrap");
             if (jdbc.queryForObject("SELECT COUNT(*) FROM user_account", Long.class) != 0)
@@ -52,6 +57,7 @@ public class FirstAdminBootstrap implements ApplicationRunner {
             if (employees.size() != 1) throw new IllegalStateException("Bootstrap employee must already exist and be active");
             jdbc.update("INSERT INTO user_account (employee_id, role_id, username, password_hash, active) VALUES (?, ?, ?, ?, TRUE)",
                     employeeId, roles.getFirst(), username, encoder.encode(password));
+            setup.markCompleted();
         });
     }
 }
