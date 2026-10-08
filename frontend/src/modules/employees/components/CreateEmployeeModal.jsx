@@ -5,7 +5,7 @@ import { createEmployeePayload } from './employeeForm'
 function FormField({ label, required, children }) {
   return (
     <div className="space-y-1">
-      <label className="block text-xs font-semibold text-gray-700">
+      <label className="block text-[10px] uppercase tracking-wider font-extrabold text-app-muted muted">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       {children}
@@ -43,7 +43,9 @@ export default function CreateEmployeeModal({
   const [error, setError] = useState(null)
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData(prev => ({ ...prev, [field]: value,
+      ...(field === 'email' && (!prev.username || prev.username === prev.email.split('@')[0])
+        ? { username: value.split('@')[0] } : {}) }))
   }
 
   const handleSubmit = async (e) => {
@@ -63,16 +65,37 @@ export default function CreateEmployeeModal({
     }
   }
 
+  const footer = (
+    <>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-full text-xs font-bold text-app-muted hover:bg-app-subtle transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="create-employee-form"
+            disabled={submitting}
+            className="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-[#1A1D1F] hover:bg-black disabled:opacity-50 transition"
+          >
+            {submitting ? 'Creating...' : 'Create Employee'}
+          </button>
+    </>
+  )
+
   return (
-    <Modal open={open} title="Create Employee" onClose={() => !submitting && onClose()}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal open={open} title="Add employee" subtitle="Official employee and organization information." footer={footer} size="max-w-2xl" onClose={() => !submitting && onClose()}>
+      <form id="create-employee-form" onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl">
+          <div className="p-3 text-xs text-app-pink bg-app-pink-bg rounded-2xl font-semibold">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="First Name" required>
             <input
               type="text"
@@ -80,7 +103,7 @@ export default function CreateEmployeeModal({
               value={formData.firstName}
               onChange={e => handleChange('firstName', e.target.value)}
               placeholder="e.g. David"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
 
@@ -91,12 +114,12 @@ export default function CreateEmployeeModal({
               value={formData.lastName}
               onChange={e => handleChange('lastName', e.target.value)}
               placeholder="e.g. Perera"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Work Email" required>
             <input
               type="email"
@@ -104,7 +127,7 @@ export default function CreateEmployeeModal({
               value={formData.email}
               onChange={e => handleChange('email', e.target.value)}
               placeholder="david@evoq.com"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
 
@@ -114,12 +137,12 @@ export default function CreateEmployeeModal({
               value={formData.phone}
               onChange={e => handleChange('phone', e.target.value)}
               placeholder="077 123 4567"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Job Title" required>
             <input
               type="text"
@@ -127,7 +150,7 @@ export default function CreateEmployeeModal({
               value={formData.jobTitle}
               onChange={e => handleChange('jobTitle', e.target.value)}
               placeholder="e.g. Software Engineer"
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
 
@@ -137,18 +160,18 @@ export default function CreateEmployeeModal({
               required
               value={formData.hireDate}
               onChange={e => handleChange('hireDate', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             />
           </FormField>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <FormField label="Department" required>
             <select
               required
               value={formData.departmentId}
               onChange={e => handleChange('departmentId', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="">Select Dept</option>
               {departments.map(d => (
@@ -161,7 +184,7 @@ export default function CreateEmployeeModal({
             <select
               value={formData.teamId}
               onChange={e => handleChange('teamId', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="">No Project</option>
               {teams.map(t => (
@@ -174,7 +197,7 @@ export default function CreateEmployeeModal({
             <select
               value={formData.supervisorId}
               onChange={e => handleChange('supervisorId', e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white"
+              className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
             >
               <option value="">None (Head)</option>
               {supervisors.map(s => (
@@ -190,21 +213,21 @@ export default function CreateEmployeeModal({
             value={formData.address}
             onChange={e => handleChange('address', e.target.value)}
             placeholder="e.g. 123 Galle Road, Colombo"
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
+            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt"
           />
         </FormField>
 
         <FormField label="Lifecycle Status" required>
           <select aria-label="Lifecycle Status" required value={formData.status} onChange={e => handleChange('status', e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white">
+            className="w-full mt-2 px-4 py-3 rounded-2xl bg-app-subtle subtle border border-app-border focus:border-gray-400 outline-none text-xs font-semibold txt">
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
           </select>
-          <p className="text-xs text-gray-600">Inactive employees cannot log in. A login account created for them stays disabled until activation.</p>
+          <p className="text-xs text-app-muted">Inactive employees cannot log in. A login account created for them stays disabled until activation.</p>
         </FormField>
 
         {/* Login Account Section */}
-        <div className="pt-2 border-t border-gray-100">
+        <div className="pt-2 border-t border-app-border">
           <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-gray-800">
             <input
               type="checkbox"
@@ -216,7 +239,7 @@ export default function CreateEmployeeModal({
           </label>
 
           {formData.createAccount && (
-            <div className="grid grid-cols-3 gap-3 mt-3 p-3 bg-gray-50 rounded-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3 p-3 bg-app-subtle subtle rounded-xl">
               <FormField label="Username" required>
                 <input
                   type="text"
@@ -255,23 +278,7 @@ export default function CreateEmployeeModal({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl transition"
-          >
-            {submitting ? 'Creating...' : 'Create Employee'}
-          </button>
-        </div>
+
       </form>
     </Modal>
   )

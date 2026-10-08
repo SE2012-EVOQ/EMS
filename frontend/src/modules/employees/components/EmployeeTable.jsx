@@ -1,133 +1,95 @@
 import React from 'react'
-import { User, Mail, Phone, MapPin, Shield, Edit2, UserCheck, Eye } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import StatusBadge from '../../../components/common/StatusBadge'
+
+function getInitials(emp) {
+  if (!emp) return '?'
+  const f = emp.firstName?.trim() || ''
+  const l = emp.lastName?.trim() || ''
+  if (f && l) {
+    const fChar = f.replace(/[^a-zA-Z]/g, '')[0] || f[0]
+    const lChar = l.replace(/[^a-zA-Z]/g, '')[0] || l[0]
+    return (fChar + lChar).toUpperCase()
+  }
+  if (emp.fullName) {
+    const parts = emp.fullName.trim().split(/\s+/)
+    if (parts.length > 1) {
+      const p1 = parts[0].replace(/[^a-zA-Z]/g, '')[0] || parts[0][0]
+      const p2 = parts[parts.length - 1].replace(/[^a-zA-Z]/g, '')[0] || parts[parts.length - 1][0]
+      return (p1 + p2).toUpperCase()
+    }
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+  return 'EP'
+}
 
 export default function EmployeeTable({
   employees = [],
   currentUser,
-  onViewProfile,
-  onEditOfficial,
-  onEditContact,
-  onToggleStatus
+  onViewProfile
 }) {
-  const isManager = currentUser?.role === 'MANAGER_ADMIN'
-
-  const formatStatus = (status) => {
-    if (!status) return 'Inactive'
-    if (status === 'ACTIVE') return 'Active'
-    if (status === 'INACTIVE') return 'Inactive'
-    if (status === 'SUSPENDED') return 'Pending'
-    if (status === 'ON_LEAVE') return 'Leave'
-    return status
-  }
-
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-gray-100 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          <tr>
-            <th className="py-3.5 px-4">Employee</th>
-            <th className="py-3.5 px-4">Department & Team</th>
-            <th className="py-3.5 px-4">Role / Title</th>
-            <th className="py-3.5 px-4">Supervisor</th>
-            <th className="py-3.5 px-4">Status</th>
-            <th className="py-3.5 px-4 text-right">Actions</th>
+      <table className="w-full min-w-[780px]">
+        <thead>
+          <tr className="text-left text-[10px] uppercase tracking-wider text-app-muted muted">
+            <th className="pb-3 font-extrabold">Employee</th>
+            <th className="pb-3 font-extrabold">Job title</th>
+            <th className="pb-3 font-extrabold">Team / Project</th>
+            <th className="pb-3 font-extrabold">Supervisor</th>
+            <th className="pb-3 font-extrabold">Status</th>
+            <th className="pb-3"></th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody>
           {employees.map((emp) => {
-            const isSelf = currentUser?.employeeId === emp.id
-            const canEditContact = isManager || isSelf
+            const code = `E${String(emp.id).padStart(3, '0')}`
+            const initials = getInitials(emp)
+            const teamName = emp.team?.name || 'General'
+            const deptName = emp.department?.name || '—'
+            const supervisorName = emp.supervisor?.fullName || '—'
+            const statusLabel = { ACTIVE: 'Active', INACTIVE: 'Inactive', SUSPENDED: 'Suspended', ON_LEAVE: 'On Leave' }[emp.status] || emp.status
 
             return (
-              <tr key={emp.id} className="hover:bg-gray-50/70 transition-colors">
-                <td className="py-3.5 px-4">
+              <tr
+                key={emp.id}
+                onClick={() => onViewProfile(emp)}
+                className="border-t border-app-border hover:bg-app-subtle/60 hover-surface cursor-pointer transition"
+              >
+                <td className="py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0">
-                      {emp.firstName?.[0]}{emp.lastName?.[0]}
+                    <div className="w-10 h-10 rounded-full bg-[#DEE8FF] avatar-soft flex items-center justify-center text-[10px] font-extrabold text-[#3B5BDB] shrink-0">
+                      {initials}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">{emp.fullName}</div>
-                      <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
-                        <Mail className="w-3 h-3 text-gray-400" />
-                        {emp.email}
+                      <div className="text-xs font-bold txt">{emp.fullName}</div>
+                      <div className="text-[10px] text-app-muted muted mt-0.5">
+                        {code} · {emp.email}
                       </div>
                     </div>
                   </div>
                 </td>
 
-                <td className="py-3.5 px-4">
-                  <div className="text-gray-900 font-medium">{emp.department?.name || '—'}</div>
-                  <div className="text-xs text-gray-500">{emp.team?.name || 'No team'}</div>
+                <td className="py-4 text-xs font-semibold txt">
+                  {emp.jobTitle}
                 </td>
 
-                <td className="py-3.5 px-4">
-                  <div className="text-gray-900 font-medium">{emp.jobTitle}</div>
-                  {emp.account?.role && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 mt-0.5">
-                      <Shield className="w-3 h-3 text-indigo-500" />
-                      {emp.account.role}
-                    </span>
-                  )}
+                <td className="py-4">
+                  <div className="text-xs font-bold txt">{teamName}</div>
+                  <div className="text-[10px] text-app-muted muted mt-0.5">{deptName}</div>
                 </td>
 
-                <td className="py-3.5 px-4">
-                  {emp.supervisor ? (
-                    <div>
-                      <div className="text-gray-900 font-medium text-xs">{emp.supervisor.fullName}</div>
-                      <div className="text-[11px] text-gray-500">{emp.supervisor.jobTitle}</div>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-gray-400">None</span>
-                  )}
+                <td className="py-4 text-xs text-app-muted muted">
+                  {supervisorName}
                 </td>
 
-                <td className="py-3.5 px-4">
-                  <StatusBadge status={formatStatus(emp.status)} />
+                <td className="py-4">
+                  <StatusBadge status={statusLabel} />
                 </td>
 
-                <td className="py-3.5 px-4 text-right">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <button
-                      onClick={() => onViewProfile(emp)}
-                      title="View Details"
-                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-
-                    {canEditContact && (
-                      <button
-                        onClick={() => onEditContact(emp)}
-                        title="Update Contact Info"
-                        className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition"
-                      >
-                        <Phone className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    {isManager && (
-                      <>
-                        <button
-                          onClick={() => onEditOfficial(emp)}
-                          title="Edit Official Information"
-                          className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600 transition"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onToggleStatus(emp)}
-                          title={emp.status === 'ACTIVE' ? 'Deactivate Employee' : 'Activate Employee'}
-                          className={`p-1.5 rounded-lg transition ${
-                            emp.status === 'ACTIVE'
-                              ? 'hover:bg-red-50 text-red-500'
-                              : 'hover:bg-green-50 text-green-600'
-                          }`}
-                        >
-                          <UserCheck className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
+                <td className="py-4 text-right pr-2">
+                  <div className="w-8 h-8 rounded-full hover:bg-app-subtle flex items-center justify-center ml-auto">
+                    <ChevronRight className="w-4 h-4 text-app-muted" />
                   </div>
                 </td>
               </tr>
