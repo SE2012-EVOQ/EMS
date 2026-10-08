@@ -1,0 +1,62 @@
+import test, { after } from 'node:test'
+import assert from 'node:assert/strict'
+import React from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { createServer } from 'vite'
+import { createEmployeePayload } from '../src/modules/employees/components/employeeForm.js'
+
+// Transform the actual JSX through the project's Vite configuration.
+const server = await createServer({ server: { watch: null }, appType: 'custom' })
+after(() => server.close())
+const { default: CreateEmployeeModal } = await server.ssrLoadModule('/src/modules/employees/components/CreateEmployeeModal.jsx')
+const { default: EditOfficialModal } = await server.ssrLoadModule('/src/modules/employees/components/EditOfficialModal.jsx')
+const { AssignmentTable } = await server.ssrLoadModule('/src/modules/assets/pages/AssetsPage.jsx')
+const render = (component, props) => renderToStaticMarkup(React.createElement(component, props))
+
+test('Manager creation offers Active by default and an explicit Inactive option', () => {
+  const html = render(CreateEmployeeModal, { open: true })
+  const selector = html.match(/<select[^>]*aria-label="Lifecycle Status"[^>]*>(.*?)<\/select>/s)?.[1]
+  assert.ok(selector, 'creation must expose the status selector')
+  assert.match(selector, /<option value="ACTIVE" selected="">Active<\/option>/)
+  assert.match(selector, /<option value="INACTIVE">Inactive<\/option>/)
+  assert.match(html, /Inactive employees cannot log in/)
+})
+
+test('official editor retains Active and Inactive lifecycle choices and account explanation', () => {
+  const html = render(EditOfficialModal, { open: true, employee: { id: 1, fullName: 'Fixture' } })
+  const selector = html.match(/<select[^>]*aria-label="Lifecycle Status"[^>]*>(.*?)<\/select>/s)?.[1]
+  assert.ok(selector)
+  assert.match(selector, /value="ACTIVE"/)
+  assert.match(selector, /value="INACTIVE"/)
+  assert.match(html, /Changing status also updates their linked account/)
+})
+
+test('returned assignment uses its response label when current inventory is empty or reassigned', () => {
+  const rows = [{ assignmentId: 3, assetId: 2, assetName: 'Returned laptop', employeeId: 1,
+    assignedDate: '2026-01-01', returnedDate: '2026-01-02', assignmentStatus: 'RETURNED' }]
+  for (const assets of [[], [{ assetId: 9, assetName: 'Other equipment' }], [{ assetId: 2, assetName: 'Stale inventory label' }]]) {
+    const html = render(AssignmentTable, { rows, assets, employees: [{ id: 1, fullName: 'Fixture' }] })
+    assert.match(html, /Returned laptop/)
+    assert.match(html, /RETURNED/)
+    assert.doesNotMatch(html, /Asset #2|Other equipment|Stale inventory label/)
+  }
+})
+
+test('creation sends the selected lifecycle status alongside optional login provisioning', () => {
+  const form = { firstName: ' Test ', lastName: ' Employee ', email: ' test@example.invalid ',
+    phone: '', address: '', jobTitle: ' Engineer ', hireDate: '2026-01-01', departmentId: '2',
+    teamId: '', supervisorId: '', username: ' test.employee ', password: 'test-password', role: 'EMPLOYEE' }
+  for (const status of ['ACTIVE', 'INACTIVE']) {
+    for (const createAccount of [false, true]) {
+      const payload = createEmployeePayload({ ...form, status, createAccount })
+      assert.equal(payload.status, status)
+      assert.equal(payload.createAccount, createAccount)
+      assert.equal(payload.departmentId, 2)
+      assert.equal(payload.teamId, null)
+      assert.equal(payload.supervisorId, null)
+      assert.equal(payload.username, createAccount ? 'test.employee' : null)
+      assert.equal(payload.password, createAccount ? 'test-password' : null)
+      assert.equal(payload.role, createAccount ? 'EMPLOYEE' : null)
+    }
+  }
+})

@@ -71,4 +71,14 @@ class AssetWorkflowTests {
         }
         verify(assets, never()).findAll(); verify(assets, never()).findById(8L);
     }
+    @Test void historyNamesComeOnlyFromAssetsLinkedToAuthorizedAssignments() {
+        var returned = new AssetAssignment(2L, 1L, LocalDate.now().minusDays(1), LocalDate.now(), "RETURNED");
+        var asset = new Asset("Returned laptop", "Laptop", "SN", "ASSIGNED"); asset.setAssetId(2L);
+        when(assignments.findByEmployeeId(1L)).thenReturn(List.of(returned));
+        when(assets.findAllById(List.of(2L))).thenReturn(List.of(asset));
+        var result = service.getAssignmentsByEmployee(1L).getFirst();
+        assertEquals("Returned laptop", result.assetName()); assertEquals("RETURNED", result.assignmentStatus());
+        assertEquals(1L, result.employeeId()); assertEquals(returned.getReturnedDate(), result.returnedDate());
+        verify(assets, never()).findAll(); verify(assignments, never()).findAll();
+    }
 }

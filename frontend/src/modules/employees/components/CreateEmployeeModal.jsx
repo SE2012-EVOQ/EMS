@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Modal from '../../../components/common/Modal'
+import { createEmployeePayload } from './employeeForm'
 
 function FormField({ label, required, children }) {
   return (
@@ -31,6 +32,7 @@ export default function CreateEmployeeModal({
     departmentId: '',
     teamId: '',
     supervisorId: '',
+    status: 'ACTIVE',
     createAccount: false,
     username: '',
     password: '',
@@ -50,22 +52,7 @@ export default function CreateEmployeeModal({
     setSubmitting(true)
 
     try {
-      const payload = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim() || null,
-        address: formData.address.trim() || null,
-        jobTitle: formData.jobTitle.trim(),
-        hireDate: formData.hireDate,
-        departmentId: Number(formData.departmentId),
-        teamId: formData.teamId ? Number(formData.teamId) : null,
-        supervisorId: formData.supervisorId ? Number(formData.supervisorId) : null,
-        createAccount: formData.createAccount,
-        username: formData.createAccount ? formData.username.trim() : null,
-        password: formData.createAccount ? formData.password : null,
-        role: formData.createAccount ? formData.role : null
-      }
+      const payload = createEmployeePayload(formData)
 
       await onSubmit(payload)
       onClose()
@@ -205,6 +192,15 @@ export default function CreateEmployeeModal({
             placeholder="e.g. 123 Galle Road, Colombo"
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500"
           />
+        </FormField>
+
+        <FormField label="Lifecycle Status" required>
+          <select aria-label="Lifecycle Status" required value={formData.status} onChange={e => handleChange('status', e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white">
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+          <p className="text-xs text-gray-600">Inactive employees cannot log in. A login account created for them stays disabled until activation.</p>
         </FormField>
 
         {/* Login Account Section */}

@@ -149,6 +149,7 @@ export default function EditOfficialModal({
 
           <FormField label="Lifecycle Status" required>
             <select
+              aria-label="Lifecycle Status"
               value={formData.status}
               onChange={e => handleChange('status', e.target.value)}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white"
@@ -158,6 +159,7 @@ export default function EditOfficialModal({
               <option value="SUSPENDED">Suspended</option>
               <option value="ON_LEAVE">On Leave</option>
             </select>
+            <p className="text-xs text-gray-600">Only Active employees can log in. Changing status also updates their linked account.</p>
           </FormField>
         </div>
 

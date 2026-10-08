@@ -64,8 +64,80 @@ class LeaveServiceTests {
         Employee requester = spy(employee); when(requester.getId()).thenReturn(1L);
         var request = new LeaveRequest(requester, type, LocalDate.now(), LocalDate.now(), null);
         when(requests.findLockedById(3L)).thenReturn(Optional.of(request));
-        AccountPrincipal other = mock(AccountPrincipal.class); when(other.getEmployeeId()).thenReturn(8L);
+        AccountPrincipal other = mock(AccountPrincipal.class); when(other.getEmployeeId()).thenReturn(8L); when(other.getRole()).thenReturn("SUPERVISOR");
+        when(people.employee(1L)).thenReturn(Optional.of(new EmployeeTeamReader.EmployeeInfo(1L, "A B", 2L, 9L, "ACTIVE")));
+        when(people.employee(8L)).thenReturn(Optional.of(new EmployeeTeamReader.EmployeeInfo(8L, "Other", 2L, null, "ACTIVE")));
         assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.approve(3L, other)).getStatusCode().value());
         assertEquals("PENDING", request.getStatus()); verifyNoInteractions(schedules, balances);
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"inactive", "transferred", "no-team", "different-supervisor", "supervisor-no-team", "supervisor-inactive"})
+    void currentScopeRejectsBothDecisionsBeforeAnyMutation(String change) {
+        Employee requester = mock(Employee.class); when(requester.getId()).thenReturn(1L);
+        var request = new LeaveRequest(requester, type, LocalDate.now(), LocalDate.now(), null);
+        when(requests.findLockedById(3L)).thenReturn(Optional.of(request));
+        AccountPrincipal caller = mock(AccountPrincipal.class); when(caller.getEmployeeId()).thenReturn(9L); when(caller.getRole()).thenReturn("SUPERVISOR");
+        when(people.employee(1L)).thenReturn(Optional.of(new EmployeeTeamReader.EmployeeInfo(1L, "Requester",
+                change.equals("no-team") ? null : change.equals("transferred") ? 4L : 2L,
+                change.equals("different-supervisor") ? 8L : 9L, change.equals("inactive") ? "INACTIVE" : "ACTIVE")));
+        when(people.employee(9L)).thenReturn(Optional.of(new EmployeeTeamReader.EmployeeInfo(9L, "Supervisor",
+                change.equals("supervisor-no-team") ? null : 2L, null, change.equals("supervisor-inactive") ? "INACTIVE" : "ACTIVE")));
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.approve(3L, caller)).getStatusCode().value());
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.reject(3L, caller)).getStatusCode().value());
+        assertEquals("PENDING", request.getStatus()); verifyNoInteractions(schedules, balances); verify(requests, never()).save(any());
+        var order = inOrder(people); order.verify(people).lockEmployee(1L); order.verify(people).lockEmployee(9L);
+        order.verify(people).employee(1L); order.verify(people).employee(9L);
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"EMPLOYEE"})
+    void employeeCannotDecideLeave(String role) {
+        var caller = mock(AccountPrincipal.class); when(caller.getEmployeeId()).thenReturn(9L); when(caller.getRole()).thenReturn(role);
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.approve(3L, caller)).getStatusCode().value());
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.reject(3L, caller)).getStatusCode().value());
+        verifyNoInteractions(requests, people, schedules, balances);
+    }
+    @Test void selfApprovalAndRejectionRemainForbidden() {
+        var caller = mock(AccountPrincipal.class); when(caller.getEmployeeId()).thenReturn(1L); when(caller.getRole()).thenReturn("SUPERVISOR");
+        var requester = mock(Employee.class); when(requester.getId()).thenReturn(1L);
+        var request = new LeaveRequest(requester, type, LocalDate.now(), LocalDate.now(), null);
+        when(requests.findLockedById(3L)).thenReturn(Optional.of(request));
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.approve(3L, caller)).getStatusCode().value());
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> service.reject(3L, caller)).getStatusCode().value());
+        verifyNoInteractions(people, schedules, balances); verify(requests, never()).save(any());
+    }
+
+    @Test void managerSelfApprovalUsesNormalBalanceAndScheduleChecksWithoutTeamOrSupervisor() {
+        var caller = mock(AccountPrincipal.class); when(caller.getEmployeeId()).thenReturn(1L); when(caller.getRole()).thenReturn("MANAGER_ADMIN");
+        var requester = mock(Employee.class); when(requester.getId()).thenReturn(1L);
+        var leaveType = mock(LeaveType.class); when(leaveType.getId()).thenReturn(2L);
+        var request = new LeaveRequest(requester, leaveType, LocalDate.now(), LocalDate.now().plusDays(1), null);
+        var balance = new LeaveBalance(requester, leaveType, new BigDecimal("12"));
+        when(requests.findLockedById(3L)).thenReturn(Optional.of(request));
+        when(people.employee(1L)).thenReturn(Optional.of(new EmployeeTeamReader.EmployeeInfo(1L, "Manager", null, null, "ACTIVE")));
+        when(schedules.removeFutureShifts(any(), any(), any())).thenReturn(true);
+        when(balances.findLockedForEmployeeType(1L, 2L)).thenReturn(Optional.of(balance));
+        when(requests.save(request)).thenReturn(request);
+        assertEquals("APPROVED", service.approve(3L, caller).status());
+        assertEquals(new BigDecimal("10"), balance.getAvailableDays()); assertEquals(new BigDecimal("2"), balance.getUsedDays());
+        verify(people, times(1)).lockEmployee(1L);
+        assertEquals(409, assertThrows(ResponseStatusException.class, () -> service.approve(3L, caller)).getStatusCode().value());
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"inactive", "attendance", "balance", "self-reject"})
+    void managerOwnExceptionDoesNotBypassOtherGuards(String condition) {
+        var caller = mock(AccountPrincipal.class); when(caller.getEmployeeId()).thenReturn(1L); when(caller.getRole()).thenReturn("MANAGER_ADMIN");
+        var requester = mock(Employee.class); when(requester.getId()).thenReturn(1L);
+        var leaveType = mock(LeaveType.class); when(leaveType.getId()).thenReturn(2L);
+        var request = new LeaveRequest(requester, leaveType, LocalDate.now(), LocalDate.now(), null);
+        var balance = new LeaveBalance(requester, leaveType, BigDecimal.ZERO);
+        when(requests.findLockedById(3L)).thenReturn(Optional.of(request));
+        when(people.employee(1L)).thenReturn(Optional.of(new EmployeeTeamReader.EmployeeInfo(1L, "Manager", null, null, condition.equals("inactive") ? "INACTIVE" : "ACTIVE")));
+        when(schedules.removeFutureShifts(any(), any(), any())).thenReturn(!condition.equals("attendance"));
+        when(balances.findLockedForEmployeeType(1L, 2L)).thenReturn(Optional.of(balance));
+        int expected = condition.equals("balance") ? 400 : condition.equals("attendance") ? 409 : 403;
+        assertEquals(expected, assertThrows(ResponseStatusException.class, () -> {
+            if (condition.equals("self-reject")) service.reject(3L, caller); else service.approve(3L, caller);
+        }).getStatusCode().value());
+        assertEquals("PENDING", request.getStatus()); assertEquals(BigDecimal.ZERO, balance.getUsedDays()); verify(requests, never()).save(any());
     }
 }

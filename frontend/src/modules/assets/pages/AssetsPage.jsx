@@ -11,11 +11,11 @@ const inputClass = 'block w-full rounded-xl border border-app-border bg-transpar
 const buttonClass = 'rounded-xl border border-app-border px-4 py-2 text-sm font-semibold disabled:opacity-50'
 const blankAsset = { assetName: '', assetType: 'Laptop', serialNumber: '', status: 'AVAILABLE' }
 
-function AssignmentTable({ rows, assets, employees, onReturn, busy }) {
+export function AssignmentTable({ rows, assets, employees, onReturn, busy }) {
   if (!rows.length) return <p className="text-sm text-app-muted">No assignments in this view.</p>
   return <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr>{['Asset', 'Employee', 'Assigned', 'Returned', 'Status', ...(onReturn ? ['Action'] : [])].map(c => <th className="p-2" key={c}>{c}</th>)}</tr></thead>
     <tbody>{rows.map(a => <tr className="border-t border-app-border" key={a.assignmentId}>
-      <td className="p-2">{assets.find(asset => asset.assetId === a.assetId)?.assetName || `Asset #${a.assetId}`}</td>
+      <td className="p-2">{a.assetName || assets.find(asset => asset.assetId === a.assetId)?.assetName || `Asset #${a.assetId}`}</td>
       <td className="p-2">{employees.find(e => e.id === a.employeeId)?.fullName || `Employee #${a.employeeId}`}</td>
       <td className="p-2">{a.assignedDate}</td><td className="p-2">{a.returnedDate || '—'}</td><td className="p-2">{a.assignmentStatus}</td>
       {onReturn && <td className="p-2">{a.assignmentStatus === 'ASSIGNED' && <button disabled={busy} className={buttonClass} onClick={() => onReturn(a.assignmentId)}>Return</button>}</td>}

@@ -117,4 +117,39 @@ class ModuleApiSecurityTests {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"entitlementDays\":" + value + "}")).andExpect(status().isBadRequest());
         verify(leave, never()).setEntitlement(any(), any(), any());
     }
+    @ParameterizedTest @ValueSource(strings = {"EMPLOYEE"})
+    void employeeCannotAccessLeaveDecisionEndpoints(String role) throws Exception {
+        var p = principal(role);
+        mvc.perform(get("/api/leave/supervisor/pending").with(user(p))).andExpect(status().isForbidden());
+        mvc.perform(post("/api/leave/requests/3/approve").with(user(p)).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/api/leave/requests/3/reject").with(user(p)).with(csrf())).andExpect(status().isForbidden());
+        verifyNoInteractions(leave);
+    }
+    @ParameterizedTest @ValueSource(strings = {"EMPLOYEE", "SUPERVISOR"})
+    void ownHistoryIncludesLabelWithoutExposingAnotherEmployeesAssignments(String role) throws Exception {
+        var p = principal(role);
+        when(assignments.getAssignmentsByEmployee(1L)).thenReturn(List.of(new AssignmentResponse(3L, 2L, "Returned laptop",
+                1L, java.time.LocalDate.of(2026, 1, 1), java.time.LocalDate.of(2026, 1, 2), "RETURNED")));
+        mvc.perform(get("/api/asset-assignments/employee/1").with(user(p))).andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].assetName").value("Returned laptop"))
+                .andExpect(jsonPath("$[0].assignmentStatus").value("RETURNED"))
+                .andExpect(jsonPath("$[0].serialNumber").doesNotExist());
+        mvc.perform(get("/api/asset-assignments/employee/9").with(user(p))).andExpect(status().isForbidden());
+        mvc.perform(get("/api/asset-assignments/asset/2").with(user(p))).andExpect(status().isForbidden());
+        verify(assignments, never()).getAssignmentsByEmployee(9L); verify(assignments, never()).getAssignmentHistory(2L);
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"SUPERVISOR", "MANAGER_ADMIN"})
+    void approverEndpointsUseAuthenticatedIdentityAndSupportTheExistingQueueAlias(String role) throws Exception {
+        var p = principal(role);
+        for (String path : List.of("/api/leave/pending", "/api/leave/supervisor/pending")) {
+            mvc.perform(get(path + "?employeeId=99").with(user(p))).andExpect(status().isOk());
+        }
+        verify(leave, times(2)).getPendingForApprover(p);
+        mvc.perform(post("/api/leave/requests/3/approve").with(user(p)).with(csrf())).andExpect(status().isOk());
+        mvc.perform(post("/api/leave/requests/3/reject").with(user(p)).with(csrf())).andExpect(status().isOk());
+        verify(leave).approve(3L, p); verify(leave).reject(3L, p);
+        mvc.perform(post("/api/leave/requests/3/approve").with(user(p))).andExpect(status().isForbidden());
+        verify(leave, times(1)).approve(3L, p);
+    }
 }

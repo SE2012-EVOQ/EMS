@@ -2,6 +2,9 @@ package com.evoq.ems.modules;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -21,6 +24,14 @@ import com.evoq.ems.leave.web.LeaveDtos.*;
 import com.evoq.ems.leave.web.LeaveReportController;
 import com.evoq.ems.attendance.service.AttendanceReconciliationJob;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import com.evoq.ems.attendance.integration.EmployeeTeamReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,9 +43,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Isolated committed fixtures enable real competing transactions; cleanup uses only fixture IDs. */
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("dev")
 class ModuleMySqlWorkflowTests {
     @Autowired JdbcTemplate jdbc;
+    @Autowired MockMvc mvc;
+    @Autowired PlatformTransactionManager transactions;
+    @MockitoSpyBean EmployeeTeamReader people;
     @Autowired EmployeeService employees;
     @Autowired EmployeeAccess access;
     @Autowired AssetAssignmentService assignments;
@@ -44,9 +59,11 @@ class ModuleMySqlWorkflowTests {
     @Autowired LeaveReportController leaveReports;
     @Autowired AssetReportController assetReports;
     @Autowired UserAccountRepository accounts;
+    @Autowired RoleRepository roles;
+    @Autowired org.springframework.security.crypto.password.PasswordEncoder encoder;
     @MockitoSpyBean AssetAssignmentRepository assignmentRepository;
     @MockitoBean AttendanceReconciliationJob job;
-    Long departmentId, teamId, supervisorId, employeeId, otherEmployeeId, assetId, typeId;
+    Long departmentId, teamId, otherTeamId, supervisorId, employeeId, otherEmployeeId, assetId, typeId;
     String tag;
     ExecutorService workers;
 
@@ -56,6 +73,8 @@ class ModuleMySqlWorkflowTests {
         departmentId = jdbc.queryForObject("SELECT department_id FROM department WHERE name=?", Long.class, tag);
         jdbc.update("INSERT INTO team_project(name) VALUES (?)", tag);
         teamId = jdbc.queryForObject("SELECT team_id FROM team_project WHERE name=?", Long.class, tag);
+        jdbc.update("INSERT INTO team_project(name) VALUES (?)", tag + "-other-team");
+        otherTeamId = jdbc.queryForObject("SELECT team_id FROM team_project WHERE name=?", Long.class, tag + "-other-team");
         supervisorId = insertEmployee("supervisor", null);
         employeeId = insertEmployee("employee", supervisorId);
         otherEmployeeId = insertEmployee("other", null);
@@ -80,6 +99,7 @@ class ModuleMySqlWorkflowTests {
         jdbc.update("DELETE FROM employee WHERE department_id=?", departmentId);
         if (typeId != null) jdbc.update("DELETE FROM leave_type WHERE leave_type_id=?", typeId);
         if (teamId != null) jdbc.update("DELETE FROM team_project WHERE team_id=?", teamId);
+        if (otherTeamId != null) jdbc.update("DELETE FROM team_project WHERE team_id=?", otherTeamId);
         jdbc.update("DELETE FROM department WHERE department_id=?", departmentId);
     }
     AccountPrincipal caller(Long id, String role) { var p = mock(AccountPrincipal.class); when(p.getEmployeeId()).thenReturn(id); when(p.getRole()).thenReturn(role); return p; }
@@ -100,7 +120,7 @@ class ModuleMySqlWorkflowTests {
         assignments.returnAsset(assignment.getAssignmentId());
         assertEquals("AVAILABLE", assetStatus()); assertEquals(0, activeAssignments());
         var history = assignments.getAssignmentsByEmployee(employeeId);
-        assertEquals(1, history.size()); assertEquals("RETURNED", history.getFirst().getAssignmentStatus()); assertNotNull(history.getFirst().getReturnedDate());
+        assertEquals(1, history.size()); assertEquals("RETURNED", history.getFirst().assignmentStatus()); assertNotNull(history.getFirst().returnedDate());
         assertEquals(409, assertThrows(ResponseStatusException.class, () -> assignments.returnAsset(assignment.getAssignmentId())).getStatusCode().value());
     }
     @Test void competingAssignmentsProduceExactlyOneLinkAndOneConflict() throws Exception {
@@ -166,5 +186,147 @@ class ModuleMySqlWorkflowTests {
         assertThrows(RuntimeException.class, () -> employees.createEmployee(new CreateEmployeeRequest(departmentId, teamId, otherEmployeeId,
                 "Invalid", "Supervisor", tag + "-invalid@example.invalid", null, null, LocalDate.now(), "Engineer", EmployeeStatus.ACTIVE,
                 false, null, null, null)));
+    }
+    @Test void returnedAssetKeepsItsNameAfterReturnAndReassignment() {
+        var assignment = assignments.assignAsset(assetId, employeeId);
+        assignments.returnAsset(assignment.getAssignmentId());
+        assertTrue(assets.getAllAssets(caller(employeeId, "EMPLOYEE")).isEmpty());
+        assertEquals(tag, assignments.getAssignmentsByEmployee(employeeId).getFirst().assetName());
+        assignments.assignAsset(assetId, otherEmployeeId);
+        assertTrue(assets.getAllAssets(caller(employeeId, "EMPLOYEE")).isEmpty());
+        var history = assignments.getAssignmentsByEmployee(employeeId);
+        assertEquals(1, history.size()); assertEquals(tag, history.getFirst().assetName());
+        assertEquals("RETURNED", history.getFirst().assignmentStatus()); assertEquals(employeeId, history.getFirst().employeeId());
+        assertEquals(2, assignments.getAssignmentHistory(assetId).size());
+    }
+
+    Long pendingLeave() {
+        leave.setEntitlement(employeeId, typeId, new EntitlementRequest(new BigDecimal("12")));
+        return leave.submit(employeeId, new SubmitLeaveRequest(typeId, LocalDate.of(2099, 8, 1), LocalDate.of(2099, 8, 2), "Scope fixture")).id();
+    }
+    void changeScope(String change) {
+        switch (change) {
+            case "transfer" -> jdbc.update("UPDATE employee SET team_id=? WHERE employee_id=?", otherTeamId, employeeId);
+            case "inactive" -> employees.changeEmployeeStatus(employeeId, EmployeeStatus.INACTIVE);
+            case "no-team" -> jdbc.update("UPDATE employee SET team_id=NULL WHERE employee_id=?", employeeId);
+            case "reassigned" -> jdbc.update("UPDATE employee SET supervisor_id=? WHERE employee_id=?", otherEmployeeId, employeeId);
+            case "supervisor-transfer" -> jdbc.update("UPDATE employee SET team_id=? WHERE employee_id=?", otherTeamId, supervisorId);
+            case "supervisor-no-team" -> jdbc.update("UPDATE employee SET team_id=NULL WHERE employee_id=?", supervisorId);
+            case "supervisor-inactive" -> employees.changeEmployeeStatus(supervisorId, EmployeeStatus.INACTIVE);
+            default -> throw new IllegalArgumentException(change);
+        }
+    }
+    void assertUntouchedPending(Long id) {
+        assertEquals("PENDING", jdbc.queryForObject("SELECT status FROM leave_request WHERE leave_request_id=?", String.class, id));
+        assertEquals(new BigDecimal("12.00"), leave.getMyLeave(employeeId).balances().getFirst().availableDays());
+        assertEquals(new BigDecimal("0.00"), leave.getMyLeave(employeeId).balances().getFirst().usedDays());
+    }
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"SUPERVISOR,transfer", "SUPERVISOR,inactive", "SUPERVISOR,no-team", "SUPERVISOR,reassigned", "SUPERVISOR,supervisor-transfer", "SUPERVISOR,supervisor-no-team", "SUPERVISOR,supervisor-inactive",
+            "MANAGER_ADMIN,transfer", "MANAGER_ADMIN,inactive", "MANAGER_ADMIN,no-team", "MANAGER_ADMIN,reassigned", "MANAGER_ADMIN,supervisor-transfer", "MANAGER_ADMIN,supervisor-no-team", "MANAGER_ADMIN,supervisor-inactive"})
+    void pendingQueueAndDecisionsUseTheSameCurrentActiveTeamBoundary(String role, String change) {
+        Long id = pendingLeave(); var supervisor = caller(supervisorId, role);
+        assertEquals(List.of(id), leave.getPendingForApprover(supervisor).stream().map(RequestResponse::id).toList());
+        changeScope(change);
+        assertTrue(leave.getPendingForApprover(supervisor).isEmpty());
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> leave.approve(id, supervisor)).getStatusCode().value());
+        assertEquals(403, assertThrows(ResponseStatusException.class, () -> leave.reject(id, supervisor)).getStatusCode().value());
+        assertUntouchedPending(id);
+        assertTrue(leave.getAllRequests().stream().anyMatch(r -> r.id().equals(id)));
+    }
+    @Test void newAssignedSameTeamSupervisorCanRejectAfterTransfer() {
+        Long id = pendingLeave();
+        jdbc.update("UPDATE employee SET team_id=?,supervisor_id=? WHERE employee_id=?", otherTeamId, otherEmployeeId, employeeId);
+        jdbc.update("UPDATE employee SET team_id=? WHERE employee_id=?", otherTeamId, otherEmployeeId);
+        assertTrue(leave.getPendingForApprover(caller(supervisorId, "SUPERVISOR")).isEmpty());
+        assertEquals(List.of(id), leave.getPendingForApprover(caller(otherEmployeeId, "SUPERVISOR")).stream().map(RequestResponse::id).toList());
+        assertEquals("REJECTED", leave.reject(id, caller(otherEmployeeId, "SUPERVISOR")).status());
+        assertTrue(leave.getPendingForApprover(caller(otherEmployeeId, "SUPERVISOR")).isEmpty());
+        assertEquals(new BigDecimal("0.00"), leave.getMyLeave(employeeId).balances().getFirst().usedDays());
+    }
+    @Test void decisionWaitingForEmployeeEditRechecksCommittedTransfer() throws Exception {
+        Long id = pendingLeave(); workers = Executors.newFixedThreadPool(2);
+        var edited = new CountDownLatch(1); var deciding = new CountDownLatch(1);
+        doAnswer(invocation -> { if (employeeId.equals(invocation.getArgument(0))) deciding.countDown(); return invocation.callRealMethod(); })
+                .when(people).lockEmployee(anyLong());
+        var edit = workers.submit(() -> new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            jdbc.update("UPDATE employee SET team_id=? WHERE employee_id=?", otherTeamId, employeeId);
+            edited.countDown();
+            try { assertTrue(deciding.await(10, TimeUnit.SECONDS)); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
+        }));
+        assertTrue(edited.await(10, TimeUnit.SECONDS));
+        var decision = workers.submit(() -> {
+            try { leave.approve(id, caller(supervisorId, "SUPERVISOR")); return 200; }
+            catch (ResponseStatusException e) { return e.getStatusCode().value(); }
+        });
+        edit.get(15, TimeUnit.SECONDS); assertEquals(403, decision.get(15, TimeUnit.SECONDS)); assertUntouchedPending(id);
+    }
+    @ParameterizedTest
+    @ValueSource(strings = {"EMPLOYEE", "SUPERVISOR", "MANAGER_ADMIN"})
+    void inactiveCreationAndOfficialEditorStatusControlRealLoginAndExistingSessions(String role) throws Exception {
+        String username = tag.toLowerCase(); String password = "FixturePassword123!";
+        var created = employees.createEmployee(new CreateEmployeeRequest(departmentId, teamId, null, "Status", "Fixture",
+                tag + "-login@example.invalid", null, null, LocalDate.now(), "Engineer", EmployeeStatus.INACTIVE,
+                true, username, password, role));
+        login(username, password, 401);
+        employees.updateOfficialInfo(created.id(), new UpdateOfficialInfoRequest(departmentId, teamId, null, "Engineer", EmployeeStatus.ACTIVE, null));
+        var session = login(username, password, 200);
+        mvc.perform(get("/api/auth/me").session(session))
+                .andExpect(status().isOk());
+        employees.updateOfficialInfo(created.id(), new UpdateOfficialInfoRequest(departmentId, teamId, null, "Engineer", EmployeeStatus.INACTIVE, null));
+        mvc.perform(get("/api/auth/me").session(session))
+                .andExpect(status().isUnauthorized());
+        assertTrue(session.isInvalid()); login(username, password, 401);
+        assertEquals(EmployeeStatus.INACTIVE, employees.getEmployeeById(created.id()).status());
+        assertFalse(accounts.findByEmployeeId(created.id()).orElseThrow().isActive());
+    }
+    MockHttpSession login(String username, String password, int expected) throws Exception {
+        var result = mvc.perform(post("/api/auth/login")
+                .with(csrf())
+                .param("username", username).param("password", password))
+                .andExpect(status().is(expected)).andReturn();
+        return (MockHttpSession) result.getRequest().getSession(false);
+    }
+
+    void enableManagerFixture() {
+        accounts.save(new UserAccount(supervisorId, roles.findByName("MANAGER_ADMIN").orElseThrow(), tag.toLowerCase() + ".manager", encoder.encode("FixturePassword123!"), true));
+    }
+    @Test void managerWithoutTeamOrSupervisorCanApproveOwnLeaveThroughHttpOnce() throws Exception {
+        enableManagerFixture();
+        jdbc.update("UPDATE employee SET team_id=NULL,supervisor_id=NULL WHERE employee_id=?", supervisorId);
+        leave.setEntitlement(supervisorId, typeId, new EntitlementRequest(new BigDecimal("12")));
+        Long id = leave.submit(supervisorId, new SubmitLeaveRequest(typeId, LocalDate.of(2099, 8, 1), LocalDate.of(2099, 8, 2), "Manager own")).id();
+        var session = login(tag.toLowerCase() + ".manager", "FixturePassword123!", 200);
+        mvc.perform(get("/api/leave/pending?employeeId=" + employeeId).session(session)).andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[0].id").value(id))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.length()").value(1));
+        mvc.perform(post("/api/leave/requests/" + id + "/reject").session(session).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/api/leave/requests/" + id + "/approve").session(session).with(csrf())).andExpect(status().isOk());
+        mvc.perform(post("/api/leave/requests/" + id + "/approve").session(session).with(csrf())).andExpect(status().isConflict());
+        assertEquals(new BigDecimal("10.00"), leave.getMyLeave(supervisorId).balances().getFirst().availableDays());
+        assertEquals(new BigDecimal("2.00"), leave.getMyLeave(supervisorId).balances().getFirst().usedDays());
+        assertTrue(leave.getPendingForApprover(caller(supervisorId, "MANAGER_ADMIN")).isEmpty());
+        assertEquals(1, accounts.findByEmployeeId(supervisorId).stream().count());
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"approve", "reject"})
+    void assignedManagerDecidesSupervisorLeaveButCannotDecideUnrelatedLeave(String decision) throws Exception {
+        enableManagerFixture();
+        // Supervisor onboarding uses the already supported Manager supervisor candidate.
+        var report = employees.createEmployee(new CreateEmployeeRequest(departmentId, teamId, supervisorId, "Supervisor", "Report",
+                tag + "-supervisor-report@example.invalid", null, null, LocalDate.now(), "Supervisor", EmployeeStatus.ACTIVE,
+                true, tag.toLowerCase() + ".report", "FixturePassword123!", "SUPERVISOR"));
+        leave.setEntitlement(report.id(), typeId, new EntitlementRequest(new BigDecimal("12")));
+        Long id = leave.submit(report.id(), new SubmitLeaveRequest(typeId, LocalDate.of(2099, 8, 1), LocalDate.of(2099, 8, 2), "Supervisor request")).id();
+        leave.setEntitlement(otherEmployeeId, typeId, new EntitlementRequest(new BigDecimal("12")));
+        Long unrelated = leave.submit(otherEmployeeId, new SubmitLeaveRequest(typeId, LocalDate.of(2099, 8, 1), LocalDate.of(2099, 8, 2), "Unrelated")).id();
+        var session = login(tag.toLowerCase() + ".manager", "FixturePassword123!", 200);
+        assertEquals(List.of(id), leave.getPendingForApprover(caller(supervisorId, "MANAGER_ADMIN")).stream().map(RequestResponse::id).toList());
+        mvc.perform(post("/api/leave/requests/" + unrelated + "/" + decision).session(session).with(csrf())).andExpect(status().isForbidden());
+        mvc.perform(post("/api/leave/requests/" + id + "/" + decision).session(session).with(csrf())).andExpect(status().isOk());
+        assertEquals(decision.equals("approve") ? "APPROVED" : "REJECTED", leave.getMyLeave(report.id()).requests().getFirst().status());
+        assertEquals(new BigDecimal(decision.equals("approve") ? "2.00" : "0.00"), leave.getMyLeave(report.id()).balances().getFirst().usedDays());
+        assertEquals("PENDING", leave.getMyLeave(otherEmployeeId).requests().getFirst().status());
     }
 }

@@ -2,6 +2,7 @@ package com.evoq.ems.asset.service;
 
 import com.evoq.ems.asset.domain.Asset;
 import com.evoq.ems.asset.domain.AssetAssignment;
+import com.evoq.ems.asset.controller.AssignmentResponse;
 import com.evoq.ems.asset.repository.AssetAssignmentRepository;
 import com.evoq.ems.asset.repository.AssetRepository;
 import com.evoq.ems.employee.repository.EmployeeRepository;
@@ -59,8 +60,17 @@ public class AssetAssignmentService {
         assets.save(asset);
         return assignments.save(assignment);
     }
-    public List<AssetAssignment> getAssignmentsByEmployee(Long id) { return assignments.findByEmployeeId(id); }
-    public List<AssetAssignment> getAssignmentHistory(Long id) { return assignments.findByAssetId(id); }
-    public List<AssetAssignment> getAllAssignments() { return assignments.findAll(); }
+    public List<AssignmentResponse> getAssignmentsByEmployee(Long id) { return describe(assignments.findByEmployeeId(id)); }
+    public List<AssignmentResponse> getAssignmentHistory(Long id) { return describe(assignments.findByAssetId(id)); }
+    public List<AssignmentResponse> getAllAssignments() { return describe(assignments.findAll()); }
+
+    private List<AssignmentResponse> describe(List<AssetAssignment> history) {
+        if (history.isEmpty()) return List.of();
+        var names = assets.findAllById(history.stream().map(AssetAssignment::getAssetId).distinct().toList())
+                .stream().collect(java.util.stream.Collectors.toMap(Asset::getAssetId, Asset::getAssetName));
+        return history.stream().map(a -> new AssignmentResponse(a.getAssignmentId(), a.getAssetId(),
+                names.get(a.getAssetId()), a.getEmployeeId(), a.getAssignedDate(), a.getReturnedDate(),
+                a.getAssignmentStatus())).toList();
+    }
     private ResponseStatusException error(HttpStatus status, String message) { return new ResponseStatusException(status, message); }
 }

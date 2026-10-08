@@ -32,11 +32,19 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
         SELECT r FROM LeaveRequest r
         JOIN FETCH r.leaveType
         JOIN FETCH r.employee
-        WHERE r.employee.supervisor.id = :supervisorId
-          AND r.status = 'PENDING'
+        LEFT JOIN r.employee.supervisor s
+        LEFT JOIN r.employee.team t
+        LEFT JOIN s.team st
+        WHERE r.status = 'PENDING'
+          AND r.employee.status = com.evoq.ems.employee.domain.EmployeeStatus.ACTIVE
+          AND ((:includeOwn = true AND r.employee.id = :approverId)
+               OR (r.employee.id <> :approverId AND s.id = :approverId
+                   AND s.status = com.evoq.ems.employee.domain.EmployeeStatus.ACTIVE
+                   AND t.id = st.id))
         ORDER BY r.submittedDate ASC
     """)
-    List<LeaveRequest> findPendingForSupervisor(@Param("supervisorId") Long supervisorId);
+    List<LeaveRequest> findPendingForApprover(@Param("approverId") Long approverId,
+                                             @Param("includeOwn") boolean includeOwn);
 
     @Query("""
         SELECT r FROM LeaveRequest r
