@@ -1,25 +1,19 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import {
-  Users,
-  UserCheck,
-  Building2,
-  FolderGit2,
   UserPlus,
   Search,
-  Filter,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react'
 
 import Card from '../../../components/common/Card'
 import EmptyState from '../../../components/common/EmptyState'
-import MetricCard from '../../../components/common/MetricCard'
-import PageHeader from '../../../components/common/PageHeader'
-import FilterPills from '../../../components/common/FilterPills'
 import { useAuth } from '../../../context/AuthContext'
 
 import OrganizationManagement from '../components/OrganizationManagement'
 import DeactivationReview from '../components/DeactivationReview'
+import MetricCard from '../../../components/common/MetricCard'
 import EmployeeTable from '../components/EmployeeTable'
 import EmployeeProfileModal from '../components/EmployeeProfileModal'
 import CreateEmployeeModal from '../components/CreateEmployeeModal'
@@ -33,17 +27,17 @@ export default function EmployeesPage() {
 
   const [supervisors, setSupervisors] = useState([])
   const [deactivation, setDeactivation] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('ALL')
   const [employees, setEmployees] = useState([])
   const [departments, setDepartments] = useState([])
   const [teams, setTeams] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [notification, setNotification] = useState(null)
+  const [toast, setToast] = useState(null)
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedDeptPill, setSelectedDeptPill] = useState('All')
-  const [statusFilter, setStatusFilter] = useState('ALL')
+  const [selectedFilter, setSelectedFilter] = useState('All')
 
   // Modals state
   const [profileModalOpen, setProfileModalOpen] = useState(false)
@@ -57,9 +51,9 @@ export default function EmployeesPage() {
   const [editContactOpen, setEditContactOpen] = useState(false)
   const [editingContactEmp, setEditingContactEmp] = useState(null)
 
-  const showNotification = (msg, isError = false) => {
-    setNotification({ text: msg, isError })
-    setTimeout(() => setNotification(null), 4000)
+  const showToast = (message, isError = false) => {
+    setToast({ message, isError })
+    setTimeout(() => setToast(null), 3500)
   }
 
   const loadData = async () => {
@@ -87,45 +81,33 @@ export default function EmployeesPage() {
     loadData()
   }, [])
 
-  // Department filter pills list
-  const deptPillItems = useMemo(() => {
-    return ['All', ...departments.map(d => d.name)]
-  }, [departments])
+  const filterPills = useMemo(() => ['All', ...new Set([...departments.map(d => d.name), ...teams.map(t => t.name)])], [departments, teams])
 
-  // Filtered employees calculation
+  // Filter within the backend-authorized directory.
   const filteredEmployees = useMemo(() => {
     return employees.filter(emp => {
-      // Search keyword filter
+      // 1. Search keyword filter
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase()
+        const query = searchQuery.toLowerCase().trim()
+        const code = `e${String(emp.id).padStart(3, '0')}`
         const matchName = emp.fullName?.toLowerCase().includes(query)
         const matchEmail = emp.email?.toLowerCase().includes(query)
         const matchTitle = emp.jobTitle?.toLowerCase().includes(query)
-        if (!matchName && !matchEmail && !matchTitle) return false
+        const matchCode = code.includes(query)
+        if (!matchName && !matchEmail && !matchTitle && !matchCode) return false
       }
 
-      // Department filter
-      if (selectedDeptPill !== 'All') {
-        if (emp.department?.name !== selectedDeptPill) return false
-      }
-
-      // Status filter
-      if (statusFilter !== 'ALL') {
-        if (emp.status !== statusFilter) return false
-      }
+      if (statusFilter !== 'ALL' && emp.status !== statusFilter) return false
+      if (selectedFilter !== 'All' && emp.department?.name !== selectedFilter && emp.team?.name !== selectedFilter) return false
 
       return true
     })
-  }, [employees, searchQuery, selectedDeptPill, statusFilter])
-
-  // Summary Metrics
-  const activeCount = employees.filter(e => e.status === 'ACTIVE').length
-  const totalCount = employees.length
+  }, [employees, searchQuery, selectedFilter, statusFilter])
 
   // Handlers for Employee Actions
   const handleCreateEmployee = async (payload) => {
     await employeeService.create(payload)
-    showNotification('Employee onboarded successfully!')
+    showToast('Employee added.')
     loadData()
   }
 
@@ -134,13 +116,13 @@ export default function EmployeesPage() {
       await new Promise((resolve, reject) => setDeactivation({ employee: editingOfficialEmp,
         action: () => employeeService.updateOfficial(id, payload), resolve, reject }))
     } else await employeeService.updateOfficial(id, payload)
-    showNotification('Official information updated successfully!')
+    showToast('Official information updated successfully!')
     loadData()
   }
 
   const handleUpdateContact = async (id, payload) => {
     await employeeService.updateContact(id, payload)
-    showNotification('Contact information updated successfully!')
+    showToast('Contact details updated.')
     loadData()
   }
 
@@ -151,118 +133,121 @@ export default function EmployeesPage() {
     }
     try {
       await employeeService.changeStatus(employee.id, 'ACTIVE')
-      showNotification('Employee activated'); await loadData()
-    } catch (err) { showNotification(err.message || 'Status change failed', true) }
+      showToast('Employee activated'); await loadData()
+    } catch (err) { showToast(err.message || 'Status change failed', true) }
   }
 
   return (
-    <>
-      <PageHeader
-        title="Employee Directory"
-        description={isManager ? "Manage employees, departments and teams." : "Your profile and permitted team records."}
-        actions={
-          isManager && (
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition shadow-sm"
-            >
-              <UserPlus className="w-4 h-4" />
-              Create Employee
-            </button>
-          )
-        }
-      />
-
-      {/* Notifications / Alerts */}
-      {notification && (
-        <div className={`p-4 mb-4 rounded-2xl text-sm font-semibold flex items-center justify-between border ${
-          notification.isError
-            ? 'bg-red-50 text-red-700 border-red-200'
-            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-        }`}>
-          <span>{notification.text}</span>
-          <button onClick={() => setNotification(null)} className="text-xs opacity-70 hover:opacity-100">✕</button>
+    <div className="space-y-4">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-[100] max-w-sm pointer-events-auto transition-all animate-in fade-in slide-in-from-top-2">
+          <div className={`p-4 rounded-2xl shadow-xl border flex items-center gap-3 ${
+            toast.isError
+              ? 'bg-app-pink-bg text-app-pink border-app-pink/20'
+              : 'bg-white text-gray-900 border-app-border'
+          }`}>
+            {!toast.isError && <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />}
+            <span className="text-xs font-bold">{toast.message}</span>
+          </div>
         </div>
       )}
 
-      {/* Metrics Row */}
-      {!loading && !error && <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <MetricCard label="Employees in scope" value={totalCount} icon="Users" />
-        <MetricCard label="Active employees" value={activeCount} icon="UserCheck" positive={true} />
-        <MetricCard label="Departments" value={departments.length} icon="Building2" />
-        <MetricCard label="Teams / Projects" value={teams.length} icon="FolderGit2" />
-      </div>}
-      {isManager && !loading && !error && <OrganizationManagement departments={departments} teams={teams} onSaved={loadData} />}
+      {/* Directory Section Header & Add Employee Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1 pb-1">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight txt">
+            Employee directory
+          </h2>
+          <p className="text-xs text-app-muted muted font-medium mt-0.5">
+            {isManager ? "Manage employees, departments and teams." : "Your profile and permitted team records."}
+          </p>
+        </div>
 
-      {/* Search & Filter Toolbar */}
-      <Card className="mb-6">
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between mb-4">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        {isManager && (
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className="bg-[#1A1D1F] dark-primary hover:bg-black text-white px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold tracking-wide transition flex items-center gap-2 shadow-sm self-start sm:self-auto"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Add employee</span>
+          </button>
+        )}
+      </div>
+
+      {!loading && !error && <>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <MetricCard label="Employees in scope" value={employees.length} icon="Users" />
+          <MetricCard label="Active employees" value={employees.filter(e => e.status === 'ACTIVE').length} icon="UserCheck" positive />
+          <MetricCard label="Departments" value={departments.length} icon="Building2" />
+          <MetricCard label="Teams / Projects" value={teams.length} icon="FolderGit2" />
+        </div>
+        {isManager && <OrganizationManagement departments={departments} teams={teams} onSaved={loadData} />}
+      </>}
+
+      {/* Filter Pills & Search Bar Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {filterPills.map(filter => (
+            <button
+              key={filter}
+              onClick={() => setSelectedFilter(filter)}
+              className={`px-3.5 py-2 rounded-full text-xs font-bold shrink-0 transition ${
+                selectedFilter === filter
+                  ? 'bg-[#1A1D1F] dark-primary text-white shadow-sm'
+                  : 'surface bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <select aria-label="Employee status filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-full surface bg-white border border-app-border px-3 py-2 text-xs">
+            <option value="ALL">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="SUSPENDED">Suspended</option><option value="ON_LEAVE">On Leave</option>
+          </select>
+          <div className="relative flex-1 sm:w-64">
+            <Search className="w-3.5 h-3.5 text-app-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search by name, email, or job title..."
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-gray-50/50"
+              placeholder="Search employees..."
+              className="w-full pl-9 pr-3 py-2 rounded-full bg-white surface border border-gray-200 text-xs font-medium outline-none focus:border-gray-400 placeholder:text-app-muted"
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-xl bg-white text-xs text-gray-600 shrink-0">
-              <Filter className="w-3.5 h-3.5 text-gray-400" />
-              <span>Status:</span>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                className="bg-transparent font-semibold focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="ACTIVE">Active</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="SUSPENDED">Suspended</option>
-                <option value="ON_LEAVE">On Leave</option>
-              </select>
-            </div>
-
-            <button
-              onClick={loadData}
-              title="Refresh Directory"
-              className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-500 transition"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
+          <button
+            onClick={loadData}
+            title="Refresh directory"
+            className="w-8 h-8 rounded-full surface bg-white border border-gray-200 flex items-center justify-center text-app-muted hover:text-gray-900 transition shrink-0"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
+      </div>
 
-        {/* Department Pills */}
-        <FilterPills
-          items={deptPillItems}
-          value={selectedDeptPill}
-          onChange={setSelectedDeptPill}
-        />
-      </Card>
-
-      {/* Employee List Table or Empty State */}
+      {/* Main Table Card */}
       <Card>
         {loading ? (
-          <div className="py-12 flex flex-col items-center justify-center text-gray-400 gap-3">
-            <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="text-sm font-medium">Loading employee records...</span>
+          <div className="py-16 flex flex-col items-center justify-center text-app-muted gap-3">
+            <RefreshCw className="w-6 h-6 animate-spin text-[#1A1D1F]" />
+            <span className="text-xs font-bold">Loading employees...</span>
           </div>
         ) : error ? (
-          <div className="py-8 flex flex-col items-center justify-center text-red-600 gap-2">
+          <div className="py-12 flex flex-col items-center justify-center text-app-pink gap-2">
             <AlertCircle className="w-6 h-6" />
-            <span className="text-sm font-semibold">{error}</span>
-            <button onClick={loadData} className="text-xs text-blue-600 underline mt-1">Try again</button>
+            <span className="text-xs font-bold">{error}</span>
+            <button onClick={loadData} className="text-xs underline font-bold mt-1">Try again</button>
           </div>
         ) : filteredEmployees.length === 0 ? (
           <EmptyState
             icon="Users"
-            title="No matching employees found"
+            title="No matching employees"
             description={
-              searchQuery || selectedDeptPill !== 'All' || statusFilter !== 'ALL'
-                ? 'Try adjusting your search criteria or clearing selected filters.'
+              searchQuery || selectedFilter !== 'All' || statusFilter !== 'ALL'
+                ? 'No employee records match the current filter or search criteria.'
                 : 'No employee records are available in the organization directory yet.'
             }
           />
@@ -274,15 +259,6 @@ export default function EmployeesPage() {
               setSelectedEmployee(emp)
               setProfileModalOpen(true)
             }}
-            onEditOfficial={(emp) => {
-              setEditingOfficialEmp(emp)
-              setEditOfficialOpen(true)
-            }}
-            onEditContact={(emp) => {
-              setEditingContactEmp(emp)
-              setEditContactOpen(true)
-            }}
-            onToggleStatus={handleToggleStatus}
           />
         )}
       </Card>
@@ -324,14 +300,24 @@ export default function EmployeesPage() {
       <EmployeeProfileModal
         open={profileModalOpen}
         employee={selectedEmployee}
+        currentUser={user}
         onClose={() => {
           setProfileModalOpen(false)
           setSelectedEmployee(null)
         }}
+        onEditOfficial={(emp) => {
+          setEditingOfficialEmp(emp)
+          setEditOfficialOpen(true)
+        }}
+        onEditContact={(emp) => {
+          setEditingContactEmp(emp)
+          setEditContactOpen(true)
+        }}
+        onToggleStatus={handleToggleStatus}
       />
       {deactivation && <DeactivationReview key={deactivation.employee.id} employee={deactivation.employee}
         onClose={() => { deactivation.reject?.(new Error('Deactivation cancelled')); setDeactivation(null) }}
-        onConfirm={async () => { await deactivation.action(); deactivation.resolve?.(); setDeactivation(null); showNotification('Employee deactivated'); await loadData() }} />}
-    </>
+        onConfirm={async () => { await deactivation.action(); deactivation.resolve?.(); setDeactivation(null); showToast('Employee deactivated'); await loadData() }} />}
+    </div>
   )
 }

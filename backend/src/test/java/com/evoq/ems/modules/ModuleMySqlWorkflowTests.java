@@ -59,6 +59,7 @@ class ModuleMySqlWorkflowTests {
     @Autowired LeaveReportController leaveReports;
     @Autowired AssetReportController assetReports;
     @Autowired UserAccountRepository accounts;
+    @Autowired DevDemoAccountInitializer demoInitializer;
     @Autowired RoleRepository roles;
     @Autowired org.springframework.security.crypto.password.PasswordEncoder encoder;
     @MockitoSpyBean AssetAssignmentRepository assignmentRepository;
@@ -328,5 +329,20 @@ class ModuleMySqlWorkflowTests {
         assertEquals(decision.equals("approve") ? "APPROVED" : "REJECTED", leave.getMyLeave(report.id()).requests().getFirst().status());
         assertEquals(new BigDecimal(decision.equals("approve") ? "2.00" : "0.00"), leave.getMyLeave(report.id()).balances().getFirst().usedDays());
         assertEquals("PENDING", leave.getMyLeave(otherEmployeeId).requests().getFirst().status());
+    }
+
+    @Test void mergedDevSeederDoesNotDeleteAnAccountOwnedByAnotherEmployee() {
+        Long accountId = jdbc.queryForObject("SELECT user_id FROM user_account WHERE username='a.perera'", Long.class);
+        Long ownerId = jdbc.queryForObject("SELECT employee_id FROM user_account WHERE user_id=?", Long.class, accountId);
+        String hash = jdbc.queryForObject("SELECT password_hash FROM user_account WHERE user_id=?", String.class, accountId);
+        jdbc.update("UPDATE user_account SET employee_id=? WHERE user_id=?", employeeId, accountId);
+        try {
+            assertThrows(IllegalStateException.class, () -> demoInitializer.run(null));
+            assertEquals(accountId, jdbc.queryForObject("SELECT user_id FROM user_account WHERE username='a.perera'", Long.class));
+            assertEquals(employeeId, jdbc.queryForObject("SELECT employee_id FROM user_account WHERE user_id=?", Long.class, accountId));
+            assertEquals(hash, jdbc.queryForObject("SELECT password_hash FROM user_account WHERE user_id=?", String.class, accountId));
+        } finally {
+            jdbc.update("UPDATE user_account SET employee_id=? WHERE user_id=?", ownerId, accountId);
+        }
     }
 }
