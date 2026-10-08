@@ -74,15 +74,13 @@ public class LeaveController {
                 );
     }
 
-    @GetMapping("/supervisor/pending")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @GetMapping({"/pending", "/supervisor/pending"})
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public ResponseEntity<List<RequestResponse>> getPending(
             @AuthenticationPrincipal AccountPrincipal principal
     ) {
         return ResponseEntity.ok(
-                leaveService.getPendingForSupervisor(
-                        principal.getEmployeeId()
-                )
+                leaveService.getPendingForApprover(principal)
         );
     }
 
@@ -95,7 +93,7 @@ public class LeaveController {
     }
 
     @PostMapping("/requests/{id}/approve")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public ResponseEntity<RequestResponse> approve(
             @PathVariable Long id,
             @AuthenticationPrincipal AccountPrincipal principal
@@ -106,7 +104,7 @@ public class LeaveController {
     }
 
     @PostMapping("/requests/{id}/reject")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'MANAGER_ADMIN')")
     public ResponseEntity<RequestResponse> reject(
             @PathVariable Long id,
             @AuthenticationPrincipal AccountPrincipal principal

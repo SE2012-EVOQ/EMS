@@ -23,19 +23,19 @@ public class AssetReportService {
         if (employeeId != null) EmployeeAccess.requireOwnOrManager(caller, employeeId);
         boolean manager = EmployeeAccess.manager(caller);
         var history = employeeId != null || !manager ? assignments.getAssignmentsByEmployee(employeeId == null ? caller.getEmployeeId() : employeeId) : assignments.getAllAssignments();
-        var inventory = assets.getAllAssets(caller).stream().filter(a -> employeeId == null || history.stream().anyMatch(h -> h.getAssetId().equals(a.getAssetId()) && "ASSIGNED".equals(h.getAssignmentStatus()))).toList();
+        var inventory = assets.getAllAssets(caller).stream().filter(a -> employeeId == null || history.stream().anyMatch(h -> h.assetId().equals(a.getAssetId()) && "ASSIGNED".equals(h.assignmentStatus()))).toList();
         Map<String, Number> summary = new LinkedHashMap<>();
         summary.put(manager && employeeId == null ? "Registered assets" : "Currently assigned assets", inventory.size());
         if (manager && employeeId == null) {
             summary.put("Available assets", inventory.stream().filter(a -> "AVAILABLE".equals(a.getStatus())).count());
             summary.put("Other asset statuses", inventory.stream().filter(a -> !"AVAILABLE".equals(a.getStatus()) && !"ASSIGNED".equals(a.getStatus())).count());
         }
-        summary.put("Active assignments", history.stream().filter(a -> "ASSIGNED".equals(a.getAssignmentStatus())).count());
-        summary.put("Returned assignments", history.stream().filter(a -> "RETURNED".equals(a.getAssignmentStatus())).count());
+        summary.put("Active assignments", history.stream().filter(a -> "ASSIGNED".equals(a.assignmentStatus())).count());
+        summary.put("Returned assignments", history.stream().filter(a -> "RETURNED".equals(a.assignmentStatus())).count());
         return new ModuleReport(manager ? employeeId == null ? "ORGANIZATION" : "SELECTED_EMPLOYEE" : "MINE", summary,
                 List.of(new ModuleReport.Table("Current assets", List.of("Asset ID", "Name", "Type", "Serial number", "Status"),
                     inventory.stream().map(a -> List.of(text(a.getAssetId()), text(a.getAssetName()), text(a.getAssetType()), text(a.getSerialNumber()), text(a.getStatus()))).toList()),
                     new ModuleReport.Table("Assignment history", List.of("Assignment ID", "Asset ID", "Employee ID", "Assigned date", "Returned date", "Status"),
-                    history.stream().map(a -> List.of(text(a.getAssignmentId()), text(a.getAssetId()), text(a.getEmployeeId()), text(a.getAssignedDate()), text(a.getReturnedDate()), text(a.getAssignmentStatus()))).toList())));
+                    history.stream().map(a -> List.of(text(a.assignmentId()), text(a.assetId()), text(a.employeeId()), text(a.assignedDate()), text(a.returnedDate()), text(a.assignmentStatus()))).toList())));
     }
 }

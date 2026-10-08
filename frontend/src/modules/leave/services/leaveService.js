@@ -16,7 +16,7 @@ export function submitLeaveRequest(data) {
 }
 
 export function getPendingLeaveRequests() {
-  return apiRequest('/leave/supervisor/pending')
+  return apiRequest('/leave/pending')
 }
 
 export function getAllLeaveRequests() {

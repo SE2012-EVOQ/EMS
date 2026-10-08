@@ -43,13 +43,13 @@ public class AssetAssignmentController {
     // View all assignments
     @GetMapping
     @PreAuthorize("hasRole('MANAGER_ADMIN')")
-    public List<AssetAssignment> getAllAssignments() {
+    public List<AssignmentResponse> getAllAssignments() {
         return assignmentService.getAllAssignments();
     }
 
     // View assets assigned to a particular employee
     @GetMapping("/employee/{employeeId}")
-    public List<AssetAssignment> getAssignmentsByEmployee(
+    public List<AssignmentResponse> getAssignmentsByEmployee(
             @PathVariable Long employeeId, @AuthenticationPrincipal AccountPrincipal principal) {
         EmployeeAccess.requireOwnOrManager(principal, employeeId);
 
@@ -60,7 +60,7 @@ public class AssetAssignmentController {
     // View assignment history of a particular asset
     @GetMapping("/asset/{assetId}")
     @PreAuthorize("hasRole('MANAGER_ADMIN')")
-    public List<AssetAssignment> getAssignmentHistory(
+    public List<AssignmentResponse> getAssignmentHistory(
             @PathVariable Long assetId) {
 
         return assignmentService

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import LeaveSetup from '../components/LeaveSetup'
+import PendingLeaveRequests from '../components/PendingLeaveRequests'
 import RequestFeedback from '../../../components/common/RequestFeedback'
 import Card from '../../../components/common/Card'
 import PageHeader from '../../../components/common/PageHeader'
@@ -63,7 +64,7 @@ export default function LeavePage() {
       setOverview(myLeave)
       setTypes(leaveTypes)
 
-      if (currentUser.role === 'SUPERVISOR') setTeamRequests(await getPendingLeaveRequests())
+      if (['SUPERVISOR', 'MANAGER_ADMIN'].includes(currentUser.role)) setTeamRequests(await getPendingLeaveRequests())
       if (currentUser.role === 'MANAGER_ADMIN') setManagerRequests(await getAllLeaveRequests())
     } catch (err) {
       setReadError(`Leave information unavailable: ${err.message || 'Read failed'}`)
@@ -232,7 +233,7 @@ export default function LeavePage() {
               Submit leave request
             </h2>
             <p className="text-sm text-gray-500 mt-1 mb-4">
-              Request leave for approval by your supervisor.
+              {user?.role === 'MANAGER_ADMIN' ? 'Submit your leave, then approve it in Pending leave approvals.' : 'Request leave for approval by your assigned supervisor or manager.'}
             </p>
 
             <form
@@ -383,61 +384,8 @@ export default function LeavePage() {
           )}
         </Card>
 
-        {user?.role === 'SUPERVISOR' && (
-          <Card>
-            <h2 className="text-lg font-semibold mb-1">
-              Pending team leave requests
-            </h2>
-            <p className="text-sm text-gray-500 mt-1 mb-4">
-              Review and decide requests from your direct reports.
-            </p>
-
-            {teamRequests.length === 0 ? (
-              <div className="py-8 text-center text-gray-500">
-                No pending team requests.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {teamRequests.map(request => (
-                  <div
-                    key={request.id}
-                    className="flex flex-col gap-3 rounded-xl border border-gray-200 p-4 md:flex-row md:items-center md:justify-between"
-                  >
-                    <div>
-                      <div className="font-medium">
-                        {request.employeeName}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {request.leaveType} · {formatDate(request.startDate)}
-                        {' '}to{' '}
-                        {formatDate(request.endDate)} · {request.days} day(s)
-                      </div>
-                      {request.reason && (
-                        <div className="mt-1 text-sm text-gray-600">
-                          {request.reason}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDecision(request.id, true)}
-                        className="rounded-xl bg-black px-4 py-2 text-sm text-white"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleDecision(request.id, false)}
-                        className="rounded-xl border border-gray-200 px-4 py-2 text-sm"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+        {['SUPERVISOR', 'MANAGER_ADMIN'].includes(user?.role) && (
+          <PendingLeaveRequests requests={teamRequests} user={user} onDecision={handleDecision} />
         )}
 
         {user?.role === 'MANAGER_ADMIN' && (
