@@ -64,7 +64,12 @@
 
     .surface, .subtle { transition: background-color .32s ease, border-color .32s ease, box-shadow .32s ease, color .32s ease; }
     .surface { box-shadow: 0 8px 30px rgba(0,0,0,.04); }
-    button.surface:hover, button.subtle:hover { transform: translateY(-1px); }
+    /* Keep control feedback inside its bounds, including in scrollable toolbars. */
+    button.surface, button.subtle { box-shadow: none; }
+    button.surface:not(:disabled):hover, button.subtle:not(:disabled):hover {
+      background-color: #f0f1f3;
+      border-color: #c7cbd1;
+    }
     tbody tr { transition: background-color .16s ease; }
     tbody tr:hover { background: rgba(26,29,31,.018); }
 
@@ -144,6 +149,14 @@
     body.dark .hover-surface:hover,
     body.dark button.surface:hover,
     body.dark button.subtle:hover { background: #22272e !important; }
+    body.dark button.surface, body.dark button.subtle { box-shadow: none !important; }
+    body.dark button.surface:not(:disabled):hover,
+    body.dark button.subtle:not(:disabled):hover { border-color: #495361 !important; }
+
+    button.surface:focus-visible, button.subtle:focus-visible,
+    body.dark button.surface:focus-visible, body.dark button.subtle:focus-visible {
+      box-shadow: inset 0 0 0 2px #5a7cf7 !important;
+    }
 
     body.dark .dark-primary {
       background: #eef1f4 !important;
